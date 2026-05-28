@@ -1,51 +1,57 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import {
+  HouseIcon,
+  GameControllerIcon,
+  TrophyIcon,
+  InfoIcon,
+  StarIcon,
+  type Icon,
+} from '@phosphor-icons/react';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../ui/Avatar';
 import SignInModal from '../ui/SignInModal';
 import styles from './Navbar.module.scss';
 
-const NAV_LINKS = [
-  { to: '/', label: 'Hub' },
-  { to: '/games', label: 'Games' },
-  { to: '/leaderboard', label: 'Leaderboard' },
-  { to: '/about', label: 'About' },
+const NAV_LINKS: { to: string; label: string; Icon: Icon }[] = [
+  { to: '/', label: 'Hub', Icon: HouseIcon },
+  { to: '/games', label: 'Games', Icon: GameControllerIcon },
+  { to: '/leaderboard', label: 'Leaderboard', Icon: TrophyIcon },
+  { to: '/about', label: 'About', Icon: InfoIcon },
 ];
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const isGame = location.pathname.startsWith('/games/');
   const [showSignIn, setShowSignIn] = useState(false);
 
   return (
     <nav className={styles.navbar}>
       <Link to='/' className={styles.logo}>
-        Arcade Ladder
+        <img src='/logo.svg' alt='Arcade Ladder' className={styles.logoImg} />
       </Link>
 
       <ul className={styles.links}>
-        {NAV_LINKS.map(({ to, label }) => (
+        {NAV_LINKS.map(({ to, label, Icon: NavIcon }) => (
           <li key={to}>
             <Link
               to={to}
               className={`${styles.link} ${location.pathname === to || (to !== '/' && location.pathname.startsWith(to)) ? styles.active : ''}`}
             >
+              <NavIcon size={16} weight='duotone' />
               {label}
             </Link>
           </li>
         ))}
-        {isGame && (
-          <li>
-            <span className={`${styles.link} ${styles.active}`}>Play</span>
-          </li>
-        )}
       </ul>
 
       <div className={styles.right}>
         {user ? (
           <>
-            <span className={styles.xp}>⭐ {user.xp.toLocaleString()} XP</span>
+            <span className={styles.xp}>
+              <StarIcon size={14} weight='duotone' color='#f59e0b' />{' '}
+              {user.xp.toLocaleString()} XP
+            </span>
             <Link
               to={`/profile/${user.username}`}
               className={styles.avatarLink}

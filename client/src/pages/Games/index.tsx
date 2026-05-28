@@ -45,12 +45,12 @@ export default function Games() {
 }
 
 const GAME_GRADIENTS: Record<string, [string, string]> = {
-  'typing-speed': ['#0ea5e9', '#06b6d4'],
-  'reaction-grid': ['#8b5cf6', '#6366f1'],
-  'pattern-memory': ['#ec4899', '#f43f5e'],
-  'quick-math': ['#3b82f6', '#6366f1'],
-  'color-sort': ['#f97316', '#f59e0b'],
-  'balloon-popper': ['#10b981', '#14b8a6'],
+  'typing-speed': ['#0284c7', '#0e7490'],
+  'reaction-grid': ['#6d28d9', '#4338ca'],
+  'pattern-memory': ['#047857', '#0f766e'],
+  'quick-math': ['#1d4ed8', '#5b21b6'],
+  'color-sort': ['#c2410c', '#b45309'],
+  'balloon-popper': ['#be185d', '#be123c'],
 };
 
 function GameCard({ game }: { game: GameWithRank }) {

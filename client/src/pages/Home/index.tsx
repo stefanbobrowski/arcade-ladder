@@ -3,6 +3,12 @@ import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import type { OverallEntry, ActivityEvent, SiteStats } from '../../types';
 import Avatar from '../../components/ui/Avatar';
+import {
+  UsersIcon,
+  LightningIcon,
+  GameControllerIcon,
+  CrownSimpleIcon,
+} from '@phosphor-icons/react';
 import StatCard from '../../components/ui/StatCard';
 import styles from './Home.module.scss';
 
@@ -33,7 +39,19 @@ export default function Home() {
         </p>
         <div className={styles.podium}>
           {second && <PodiumCard entry={second} rank={2} />}
-          {first && <PodiumCard entry={first} rank={1} />}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            {first && (
+              <CrownSimpleIcon size={36} weight='duotone' color='#f59e0b' />
+            )}
+            {first && <PodiumCard entry={first} rank={1} />}
+          </div>
           {third && <PodiumCard entry={third} rank={3} />}
         </div>
       </section>
@@ -42,13 +60,19 @@ export default function Home() {
       {stats && (
         <div className={styles.stats}>
           <StatCard
-            icon='👥'
+            icon={<UsersIcon size={28} weight='duotone' color='#7c3aed' />}
             value={stats.total_players}
             label='Total Players'
           />
-          <StatCard icon='⚡' value={stats.total_plays} label='Games Played' />
           <StatCard
-            icon='🎮'
+            icon={<LightningIcon size={28} weight='duotone' color='#06b6d4' />}
+            value={stats.total_plays}
+            label='Games Played'
+          />
+          <StatCard
+            icon={
+              <GameControllerIcon size={28} weight='duotone' color='#ec4899' />
+            }
             value={stats.games_available}
             label='Games Available'
           />

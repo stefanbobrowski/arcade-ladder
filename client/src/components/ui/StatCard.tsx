@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
 import styles from './StatCard.module.scss';
 
 interface StatCardProps {
-  icon: string;
+  icon: ReactNode;
   value: string | number;
   label: string;
 }
