@@ -1,0 +1,39 @@
+{
+  "name": "arcade-ladder-server",
+  "version": "1.0.0",
+  "description": "Arcade Ladder backend API",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:migrate": "docker exec -i arcade-pg psql -U postgres -d arcade_ladder < src/db/migrations/001_init.sql",
+    "db:reset": "docker exec -i arcade-pg psql -U postgres -d arcade_ladder -c \"TRUNCATE scores, users RESTART IDENTITY CASCADE;\"",
+    "db:reseed": "docker exec -i arcade-pg psql -U postgres -d arcade_ladder -c \"DELETE FROM games; INSERT INTO games (slug, title, description, emoji) VALUES ('typing-speed','Typing Speed','Type words as fast and accurately as you can.','⌨️'),('reaction-grid','Reaction Grid','Click the highlighted tile before it moves.','⚡'),('pattern-memory','Pattern Memory','Watch the sequence, then repeat it.','🧠'),('quick-math','Quick Math','Answer arithmetic questions under time pressure.','🔢'),('color-sort','Color Sort','Sort falling items into the correct color bins.','🎨'),('balloon-popper','Balloon Popper','Pop balloons before they float away.','🎈') ON CONFLICT (slug) DO NOTHING;\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/jwt": "^10.1.0",
+    "@fastify/passport": "^3.0.2",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.8.5",
+    "fastify-plugin": "^5.1.0",
+    "passport-github2": "^0.1.12",
+    "passport-google-oauth20": "^2.0.0",
+    "pg": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@types/passport-github2": "^1.2.9",
+    "@types/passport-google-oauth20": "^2.0.17",
+    "@types/pg": "^8.20.0",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
+}

@@ -1,0 +1,17 @@
+/* TEAM */
+Developer: Stefan
+Location: Earth
+
+/* SITE */
+Last update: 2026/05/28
+Language: English
+Doctype: HTML5
+IDE: Visual Studio Code
+Standards: HTML5, CSS3, TypeScript
+
+/* TECHNOLOGY COLOPHON */
+Frontend: Vite + React + TypeScript
+Backend: Node.js + Fastify
+Database: PostgreSQL (Google Cloud SQL)
+Hosting: Firebase Hosting (frontend) + Google Cloud Run (backend)
+Auth: Google OAuth 2.0 + GitHub OAuth 2.0

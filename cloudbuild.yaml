@@ -1,0 +1,82 @@
+steps:
+  # ── 1. Build backend Docker image ──────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/arcade-ladder-server:$COMMIT_SHA'
+      - './server'
+
+  # ── 2. Push to Artifact Registry ───────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/arcade-ladder-server:$COMMIT_SHA'
+
+  # ── 3. Deploy backend to Cloud Run ─────────────────────────────────────────
+  #
+  # Non-sensitive config is passed via --set-env-vars.
+  # Secrets (JWT_SECRET, COOKIE_SECRET, GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_SECRET,
+  # DATABASE_URL) are stored in Secret Manager and referenced via --set-secrets.
+  #
+  # Before first deploy, create secrets with:
+  #   gcloud secrets create JWT_SECRET --replication-policy=automatic
+  #   echo -n "your-secret-value" | gcloud secrets versions add JWT_SECRET --data-file=-
+  # Repeat for each secret below.
+  #
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'arcade-ladder-server'
+      - '--image=$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/arcade-ladder-server:$COMMIT_SHA'
+      - '--region=$_REGION'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--min-instances=0'
+      - '--max-instances=10'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--port=8080'
+      - '--add-cloudsql-instances=$_CLOUDSQL_INSTANCE'
+      # Non-sensitive env vars — safe to set here
+      - '--set-env-vars=NODE_ENV=production,CLIENT_ORIGIN=$_CLIENT_ORIGIN,API_BASE_URL=$_API_BASE_URL,GOOGLE_CLIENT_ID=$_GOOGLE_CLIENT_ID,GITHUB_CLIENT_ID=$_GITHUB_CLIENT_ID'
+      # Secrets pulled from Secret Manager at runtime — never stored in build logs
+      - '--set-secrets=JWT_SECRET=JWT_SECRET:latest,COOKIE_SECRET=COOKIE_SECRET:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,GITHUB_CLIENT_SECRET=GITHUB_CLIENT_SECRET:latest,DATABASE_URL=DATABASE_URL:latest'
+
+  # ── 4. Build frontend and deploy to Firebase Hosting ───────────────────────
+  #
+  # Requires the Cloud Build service account to have the Firebase Admin role, or
+  # store a Firebase service-account key in Secret Manager as FIREBASE_SERVICE_ACCOUNT
+  # and use: --token "$(gcloud secrets versions access latest --secret=FIREBASE_SERVICE_ACCOUNT)"
+  #
+  - name: 'node:20-slim'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        cd client
+        npm ci
+        VITE_API_BASE_URL=$_API_BASE_URL/api/v1 npm run build
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        npm install -g firebase-tools
+        firebase deploy --only hosting --project $PROJECT_ID --non-interactive
+
+substitutions:
+  _REGION: us-central1
+  _REPO_NAME: arcade-ladder
+  # Set these in the Cloud Build trigger's substitution variables:
+  _CLOUDSQL_INSTANCE: '' # e.g. my-project:us-central1:arcade-ladder-db
+  _CLIENT_ORIGIN: '' # e.g. https://arcadeladder.com
+  _API_BASE_URL: '' # e.g. https://arcade-ladder-server-xyz-uc.a.run.app
+  _GOOGLE_CLIENT_ID: '' # non-secret; from Google Cloud Console
+  _GITHUB_CLIENT_ID: '' # non-secret; from GitHub OAuth app settings
+
+options:
+  logging: CLOUD_LOGGING_ONLY
