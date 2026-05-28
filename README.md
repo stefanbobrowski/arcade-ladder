@@ -1,5 +1,7 @@
 # Arcade Ladder 🎮
 
+Trigger Build: Yes
+
 > A web-based arcade platform where every game has a leaderboard and every player has a rank.
 
 Play simple browser-based games, compete on permanent per-game leaderboards, and climb the overall rankings. No seasons, no paywalls — just skill and repetition.
