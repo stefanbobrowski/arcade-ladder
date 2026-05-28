@@ -68,26 +68,71 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
     const payload = request.user as { sub: string };
     const { username, chosen_avatar } = request.body as {
       username?: string;
-      chosen_avatar?: string;
+      chosen_avatar?: string | null;
     };
 
-    const fields: string[] = [];
+    const setClauses: string[] = [];
     const values: unknown[] = [];
 
     if (username !== undefined) {
-      fields.push(`username = $${fields.length + 1}`);
+      // Format validation
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+        return reply.code(400).send({
+          error:
+            'Username must be 3–20 characters: letters, numbers, and underscores only.',
+        });
+      }
+      if (/^_|_$|_{2,}/.test(username)) {
+        return reply.code(400).send({
+          error:
+            'Username cannot start or end with an underscore, or have consecutive underscores.',
+        });
+      }
+
+      // Duplicate check (case-insensitive)
+      const { rows: dup } = await fastify.db.query(
+        'SELECT id FROM users WHERE LOWER(username) = LOWER($1) AND id != $2',
+        [username, payload.sub]
+      );
+      if (dup.length > 0) {
+        return reply
+          .code(409)
+          .send({ error: 'That username is already taken.' });
+      }
+
+      // Rate limit: once every 30 days
+      const { rows: cur } = await fastify.db.query(
+        'SELECT username_changed_at FROM users WHERE id = $1',
+        [payload.sub]
+      );
+      const changedAt: string | null = cur[0]?.username_changed_at ?? null;
+      if (changedAt) {
+        const daysSince =
+          (Date.now() - new Date(changedAt).getTime()) / 86_400_000;
+        if (daysSince < 30) {
+          const daysLeft = Math.ceil(30 - daysSince);
+          return reply.code(429).send({
+            error: `You can change your username again in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`,
+          });
+        }
+      }
+
+      setClauses.push(`username = $${values.length + 1}`);
       values.push(username);
+      setClauses.push('username_changed_at = NOW()');
     }
+
     if (chosen_avatar !== undefined) {
-      fields.push(`chosen_avatar = $${fields.length + 1}`);
+      setClauses.push(`chosen_avatar = $${values.length + 1}`);
       values.push(chosen_avatar);
     }
-    if (fields.length === 0)
+
+    if (setClauses.length === 0)
       return reply.code(400).send({ error: 'Nothing to update' });
 
     values.push(payload.sub);
     const { rows } = await fastify.db.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${values.length}
+      `UPDATE users SET ${setClauses.join(', ')} WHERE id = $${values.length}
        RETURNING id, username, avatar_url, chosen_avatar, xp`,
       values
     );
@@ -104,7 +149,7 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
          user_best.play_count,
          ranked.rank,
          total.total_players,
-         GREATEST(1, ROUND((1 - ranked.rank::numeric / NULLIF(total.total_players, 0)) * 100)) AS percentile
+         GREATEST(1, ROUND(ranked.rank::numeric / NULLIF(total.total_players, 0) * 100)) AS percentile
        FROM games g
        LEFT JOIN (
          SELECT game_id, MAX(score) AS best_score, COUNT(*) AS play_count

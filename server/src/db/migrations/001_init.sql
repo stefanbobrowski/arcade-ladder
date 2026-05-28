@@ -11,10 +11,11 @@ CREATE TABLE IF NOT EXISTS users (
   email           VARCHAR(255) UNIQUE NOT NULL,
   oauth_provider  VARCHAR(20) NOT NULL,
   oauth_id        VARCHAR(255) NOT NULL,
-  avatar_url      TEXT,
-  chosen_avatar   VARCHAR(50),
-  xp              INTEGER NOT NULL DEFAULT 0,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  avatar_url          TEXT,
+  chosen_avatar       VARCHAR(50),
+  xp                  INTEGER NOT NULL DEFAULT 0,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  username_changed_at TIMESTAMPTZ,
   UNIQUE (oauth_provider, oauth_id)
 );
 
@@ -90,20 +91,20 @@ ON CONFLICT DO NOTHING;
 -- ── Seed scores (references game slugs via subquery so IDs don't need to be known) ──
 
 INSERT INTO scores (user_id, game_id, score)
-SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 1850 FROM games WHERE slug = 'typing-speed'
+SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 50 FROM games WHERE slug = 'typing-speed'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 1420 FROM games WHERE slug = 'typing-speed'
+SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 20 FROM games WHERE slug = 'typing-speed'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000003'::uuid, id,  980 FROM games WHERE slug = 'typing-speed'
+SELECT '00000000-0000-0000-0000-000000000003'::uuid, id,  8 FROM games WHERE slug = 'typing-speed'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 2100 FROM games WHERE slug = 'reaction-grid'
+SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 10 FROM games WHERE slug = 'reaction-grid'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 1750 FROM games WHERE slug = 'reaction-grid'
+SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 17 FROM games WHERE slug = 'reaction-grid'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000003'::uuid, id, 1300 FROM games WHERE slug = 'reaction-grid'
+SELECT '00000000-0000-0000-0000-000000000003'::uuid, id, 13 FROM games WHERE slug = 'reaction-grid'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000001'::uuid, id,  850 FROM games WHERE slug = 'pattern-memory'
+SELECT '00000000-0000-0000-0000-000000000001'::uuid, id,  5 FROM games WHERE slug = 'pattern-memory'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000002'::uuid, id,  620 FROM games WHERE slug = 'pattern-memory'
+SELECT '00000000-0000-0000-0000-000000000002'::uuid, id,  6 FROM games WHERE slug = 'pattern-memory'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000003'::uuid, id,  490 FROM games WHERE slug = 'quick-math';
+SELECT '00000000-0000-0000-0000-000000000003'::uuid, id,  9 FROM games WHERE slug = 'quick-math';

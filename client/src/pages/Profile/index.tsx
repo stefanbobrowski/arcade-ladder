@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 import type { User, UserRanking } from '../../types';
-import Avatar from '../../components/ui/Avatar';
+import Avatar, { DICEBEAR_OPTIONS } from '../../components/ui/Avatar';
+import { useAuth } from '../../context/AuthContext';
 import styles from './Profile.module.scss';
 
 interface ProfileData extends User {
@@ -13,11 +14,23 @@ interface ProfileData extends User {
 
 export default function Profile() {
   const { username } = useParams<{ username: string }>();
+  const navigate = useNavigate();
+  const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [rankings, setRankings] = useState<UserRanking[]>([]);
 
+  // Edit state
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [savingUsername, setSavingUsername] = useState(false);
+
   useEffect(() => {
     if (!username) return;
+    setEditingUsername(false);
+    setShowAvatarPicker(false);
     api.get<ProfileData>(`/users/${username}`).then((r) => setProfile(r.data));
     api
       .get<UserRanking[]>(`/users/${username}/rankings`)
@@ -26,15 +39,137 @@ export default function Profile() {
 
   if (!profile) return <div className={styles.loading}>Loading profile...</div>;
 
+  const isOwnProfile = !!user && user.id === profile.id;
   const level = xpToLevel(profile.xp);
+
+  async function handleSaveAvatar(key: string | null) {
+    setSavingAvatar(true);
+    try {
+      const { data } = await api.patch('/users/me', { chosen_avatar: key });
+      setProfile((prev) =>
+        prev ? { ...prev, chosen_avatar: data.chosen_avatar } : null
+      );
+      updateUser({ chosen_avatar: data.chosen_avatar });
+      setShowAvatarPicker(false);
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
+
+  async function handleSaveUsername() {
+    const trimmed = usernameInput.trim();
+    if (!trimmed) return;
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmed)) {
+      setUsernameError(
+        '3–20 characters: letters, numbers, and underscores only.'
+      );
+      return;
+    }
+    if (/^_|_$|_{2,}/.test(trimmed)) {
+      setUsernameError(
+        'Cannot start/end with underscore or have consecutive underscores.'
+      );
+      return;
+    }
+    setSavingUsername(true);
+    try {
+      const { data } = await api.patch('/users/me', { username: trimmed });
+      updateUser({ username: data.username });
+      navigate(`/profile/${data.username}`, { replace: true });
+      setEditingUsername(false);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error ?? 'Something went wrong.';
+      setUsernameError(msg);
+    } finally {
+      setSavingUsername(false);
+    }
+  }
 
   return (
     <div className={styles.page}>
       <div className={styles.headerCard}>
-        <Avatar user={profile} size={80} />
+        <div className={styles.avatarWrapper}>
+          <Avatar user={profile} size={80} />
+          {isOwnProfile && (
+            <button
+              className={styles.avatarEditBtn}
+              onClick={() => setShowAvatarPicker((v) => !v)}
+              title='Change avatar'
+              aria-label='Change avatar'
+            >
+              ✏️
+            </button>
+          )}
+        </div>
+
         <div className={styles.headerInfo}>
           <div className={styles.usernameRow}>
-            <h1 className={styles.username}>{profile.username}</h1>
+            {editingUsername ? (
+              <div className={styles.usernameEditArea}>
+                <div className={styles.usernameEditRow}>
+                  <input
+                    className={styles.usernameInput}
+                    value={usernameInput}
+                    onChange={(e) => {
+                      setUsernameInput(e.target.value);
+                      setUsernameError('');
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveUsername();
+                      if (e.key === 'Escape') {
+                        setEditingUsername(false);
+                        setUsernameError('');
+                      }
+                    }}
+                    maxLength={20}
+                    autoFocus
+                    placeholder='New username'
+                  />
+                  <button
+                    className={styles.saveBtn}
+                    onClick={handleSaveUsername}
+                    disabled={savingUsername}
+                  >
+                    {savingUsername ? '…' : 'Save'}
+                  </button>
+                  <button
+                    className={styles.cancelBtn}
+                    onClick={() => {
+                      setEditingUsername(false);
+                      setUsernameError('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {usernameError && (
+                  <p className={styles.fieldError}>{usernameError}</p>
+                )}
+                <p className={styles.usernameHint}>
+                  3–20 characters · letters, numbers, underscores · once per 30
+                  days
+                </p>
+              </div>
+            ) : (
+              <>
+                <h1 className={styles.username}>{profile.username}</h1>
+                {isOwnProfile && (
+                  <button
+                    className={styles.editBtn}
+                    onClick={() => {
+                      setUsernameInput(profile.username);
+                      setEditingUsername(true);
+                    }}
+                    title='Edit username'
+                    aria-label='Edit username'
+                  >
+                    ✏️
+                  </button>
+                )}
+              </>
+            )}
           </div>
           <p className={styles.memberSince}>
             Member since{' '}
@@ -59,6 +194,41 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Avatar picker — shown inline below header when open */}
+      {isOwnProfile && showAvatarPicker && (
+        <div className={styles.avatarPickerCard}>
+          <p className={styles.avatarPickerTitle}>Choose your avatar</p>
+          <div className={styles.avatarPickerGrid}>
+            {profile.avatar_url && (
+              <button
+                className={`${styles.avatarOption} ${profile.chosen_avatar == null ? styles.avatarOptionActive : ''}`}
+                onClick={() => handleSaveAvatar(null)}
+                disabled={savingAvatar}
+                title='Provider photo'
+              >
+                <img src={profile.avatar_url} alt='Provider photo' />
+                <span>Provider</span>
+              </button>
+            )}
+            {DICEBEAR_OPTIONS.map(({ key, seed }) => (
+              <button
+                key={key}
+                className={`${styles.avatarOption} ${profile.chosen_avatar === key ? styles.avatarOptionActive : ''}`}
+                onClick={() => handleSaveAvatar(key)}
+                disabled={savingAvatar}
+                title={seed}
+              >
+                <img
+                  src={`https://api.dicebear.com/9.x/bottts/svg?seed=${seed}`}
+                  alt={seed}
+                />
+                <span>{seed}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className={styles.xpCard}>
         <div className={styles.xpHeader}>
