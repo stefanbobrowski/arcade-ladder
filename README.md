@@ -1,6 +1,6 @@
 # Arcade Ladder 🎮
 
-Trigger Build: Yes
+Trigger Build: Ye
 
 > A web-based arcade platform where every game has a leaderboard and every player has a rank.
 
