@@ -2,7 +2,7 @@
 
 > A web-based arcade platform where every game has a leaderboard and every player has a rank.
 
-Play simple, fun browser-based games, compete on permanent per-game leaderboards, and climb the overall rankings. No seasons, no paywalls — just skill and repetition.
+Play simple browser-based games, compete on permanent per-game leaderboards, and climb the overall rankings. No seasons, no paywalls — just skill and repetition.
 
 **Live site:** arcadeladder.com _(in development)_
 
