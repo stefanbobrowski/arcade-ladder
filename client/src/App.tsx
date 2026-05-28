@@ -7,6 +7,7 @@ import Game from './pages/Game';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 import About from './pages/About';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path='/leaderboard' element={<Leaderboard />} />
             <Route path='/profile/:username' element={<Profile />} />
             <Route path='/about' element={<About />} />
+            <Route path='*' element={<NotFound />} />
           </Route>
         </Routes>
       </BrowserRouter>

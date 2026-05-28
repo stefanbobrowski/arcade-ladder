@@ -44,10 +44,23 @@ export default function Games() {
   );
 }
 
+const GAME_GRADIENTS: Record<string, [string, string]> = {
+  'typing-speed': ['#0ea5e9', '#06b6d4'],
+  'reaction-grid': ['#8b5cf6', '#6366f1'],
+  'pattern-memory': ['#ec4899', '#f43f5e'],
+  'quick-math': ['#3b82f6', '#6366f1'],
+  'color-sort': ['#f97316', '#f59e0b'],
+  'balloon-popper': ['#10b981', '#14b8a6'],
+};
+
 function GameCard({ game }: { game: GameWithRank }) {
+  const [from, to] = GAME_GRADIENTS[game.slug] ?? ['#7c3aed', '#06b6d4'];
   return (
     <div className={styles.card}>
-      <div className={styles.thumbnail}>
+      <div
+        className={styles.thumbnail}
+        style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
+      >
         <span className={styles.emoji}>{game.emoji ?? '🎮'}</span>
         {game.user_rank != null && game.user_rank <= 3 && (
           <span className={styles.rankBadge}>
