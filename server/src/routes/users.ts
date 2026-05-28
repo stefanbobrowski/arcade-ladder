@@ -37,10 +37,13 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
       `SELECT
          g.slug, g.title, g.emoji,
          user_best.best_score,
-         user_best.play_count,
+         COALESCE(user_best.play_count, 0) AS play_count,
          ranked.rank,
          total.total_players,
-         GREATEST(1, ROUND(ranked.rank::numeric / NULLIF(total.total_players, 0) * 100)) AS percentile
+         CASE
+           WHEN ranked.rank IS NULL THEN NULL
+           ELSE GREATEST(1, CEIL(ranked.rank::numeric / NULLIF(total.total_players, 0) * 100)::int)
+         END AS percentile
        FROM games g
        LEFT JOIN (
          SELECT game_id, MAX(score) AS best_score, COUNT(*) AS play_count
@@ -146,10 +149,13 @@ export const userRoutes: FastifyPluginAsync = async (fastify) => {
       `SELECT
          g.slug, g.title, g.emoji,
          user_best.best_score,
-         user_best.play_count,
+         COALESCE(user_best.play_count, 0) AS play_count,
          ranked.rank,
          total.total_players,
-         GREATEST(1, ROUND(ranked.rank::numeric / NULLIF(total.total_players, 0) * 100)) AS percentile
+         CASE
+           WHEN ranked.rank IS NULL THEN NULL
+           ELSE GREATEST(1, CEIL(ranked.rank::numeric / NULLIF(total.total_players, 0) * 100)::int)
+         END AS percentile
        FROM games g
        LEFT JOIN (
          SELECT game_id, MAX(score) AS best_score, COUNT(*) AS play_count

@@ -294,7 +294,7 @@ export default function Profile() {
                 <span className={styles.percentile}>
                   {r.percentile != null
                     ? `Top ${r.percentile}%`
-                    : r.play_count === 0
+                    : !r.play_count
                       ? 'Unplayed'
                       : ''}
                 </span>
