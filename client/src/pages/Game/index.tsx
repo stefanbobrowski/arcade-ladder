@@ -96,7 +96,7 @@ export default function Game() {
                 </button>
               ) : (
                 <p className={styles.loginPrompt}>
-                  Sign in to submit your score
+                  Sign in to play and submit your score
                 </p>
               )}
             </div>

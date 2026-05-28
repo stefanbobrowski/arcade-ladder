@@ -69,7 +69,7 @@ substitutions:
   _REPO_NAME: arcade-ladder
   _CLOUDSQL_INSTANCE: 'arcade-ladder:us-central1:arcade-ladder-db'
   _CLIENT_ORIGIN: 'https://arcade-ladder.web.app' # your Firebase Hosting URL
-  _API_BASE_URL: '' # leave blank until after first deploy
+  _API_BASE_URL: 'https://arcade-ladder-server-x3a55tvqeq-uc.a.run.app'
   _GOOGLE_CLIENT_ID: '657293993903-tfbn70i8qtfgrhpmfblcql7lkops78cr.apps.googleusercontent.com'
   _GITHUB_CLIENT_ID: 'Ov23liCiIeNCtlcTbntu'
 

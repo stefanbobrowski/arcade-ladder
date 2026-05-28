@@ -38,6 +38,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  cursor: default;
   transition:
     transform 0.15s,
     border-color 0.15s;
@@ -91,6 +92,7 @@
   font-size: 1.05rem;
   font-weight: 700;
   margin: 0;
+  cursor: text;
 }
 
 .cardMeta {
@@ -122,6 +124,7 @@
   font-size: 0.9rem;
   margin-top: auto;
   transition: opacity 0.15s;
+  cursor: pointer;
 }
 
 .playBtn:hover {
