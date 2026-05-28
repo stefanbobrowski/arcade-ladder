@@ -123,7 +123,7 @@ export default function Profile() {
               <div className={styles.rankRight}>
                 <span className={styles.percentile}>
                   {r.percentile != null
-                    ? `Top ${100 - r.percentile}%`
+                    ? `Top ${r.percentile}%`
                     : r.play_count === 0
                       ? 'Unplayed'
                       : ''}

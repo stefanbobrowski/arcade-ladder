@@ -98,6 +98,41 @@ psql -U postgres -d arcadeladder -f server/src/db/migrations/001_init.sql
 
 The migration creates all tables and inserts 3 seed users + scores across 3 games so leaderboards are never empty during development.
 
+#### Reseed local database (wipe scores + seed users, re-insert)
+
+```bash
+psql -U postgres -d arcadeladder -c "TRUNCATE scores, users RESTART IDENTITY CASCADE;"
+psql -U postgres -d arcadeladder -f server/src/db/migrations/001_init.sql
+```
+
+#### Reseed production (Cloud SQL via Cloud Shell)
+
+```bash
+# Connect to the instance
+gcloud sql connect arcade-ladder-db --user=arcadeladder_user --database=arcadeladder --project=arcade-ladder
+```
+
+Then at the `arcadeladder=>` prompt:
+
+```sql
+-- Wipe seed data only (leaves real users/scores intact if you prefer)
+DELETE FROM users WHERE id IN (
+  '00000000-0000-0000-0000-000000000001'::uuid,
+  '00000000-0000-0000-0000-000000000002'::uuid,
+  '00000000-0000-0000-0000-000000000003'::uuid
+);
+-- Then paste the INSERT blocks from 001_init.sql
+```
+
+Or to wipe everything and start fresh:
+
+```sql
+TRUNCATE scores, users RESTART IDENTITY CASCADE;
+\i 001_init.sql
+```
+
+> Upload `001_init.sql` first via Cloud Shell **⋮ menu → Upload** before using `\i`.
+
 ---
 
 ## Deployment (Google Cloud Platform)

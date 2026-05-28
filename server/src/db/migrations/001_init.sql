@@ -90,20 +90,20 @@ ON CONFLICT DO NOTHING;
 -- ── Seed scores (references game slugs via subquery so IDs don't need to be known) ──
 
 INSERT INTO scores (user_id, game_id, score)
-SELECT '00000000-0000-0000-0000-000000000001', id, 1850 FROM games WHERE slug = 'typing-speed'
+SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 1850 FROM games WHERE slug = 'typing-speed'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000002', id, 1420 FROM games WHERE slug = 'typing-speed'
+SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 1420 FROM games WHERE slug = 'typing-speed'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000003', id,  980 FROM games WHERE slug = 'typing-speed'
+SELECT '00000000-0000-0000-0000-000000000003'::uuid, id,  980 FROM games WHERE slug = 'typing-speed'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000001', id, 2100 FROM games WHERE slug = 'reaction-grid'
+SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 2100 FROM games WHERE slug = 'reaction-grid'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000002', id, 1750 FROM games WHERE slug = 'reaction-grid'
+SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 1750 FROM games WHERE slug = 'reaction-grid'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000003', id, 1300 FROM games WHERE slug = 'reaction-grid'
+SELECT '00000000-0000-0000-0000-000000000003'::uuid, id, 1300 FROM games WHERE slug = 'reaction-grid'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000001', id,  850 FROM games WHERE slug = 'pattern-memory'
+SELECT '00000000-0000-0000-0000-000000000001'::uuid, id,  850 FROM games WHERE slug = 'pattern-memory'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000002', id,  620 FROM games WHERE slug = 'pattern-memory'
+SELECT '00000000-0000-0000-0000-000000000002'::uuid, id,  620 FROM games WHERE slug = 'pattern-memory'
 UNION ALL
-SELECT '00000000-0000-0000-0000-000000000003', id,  490 FROM games WHERE slug = 'quick-math';
+SELECT '00000000-0000-0000-0000-000000000003'::uuid, id,  490 FROM games WHERE slug = 'quick-math';
