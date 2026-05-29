@@ -19,6 +19,8 @@ const GAME_COMPONENTS: Record<
   'color-sort': lazy(() => import('../../games/ColorSort')),
   'balloon-popper': lazy(() => import('../../games/BalloonPopper')),
   'match-game': lazy(() => import('../../games/MatchGame')),
+  'dots-boxes': lazy(() => import('../../games/DotsBoxes')),
+  'arrow-escape': lazy(() => import('../../games/ArrowEscape')),
 };
 
 export default function Game() {

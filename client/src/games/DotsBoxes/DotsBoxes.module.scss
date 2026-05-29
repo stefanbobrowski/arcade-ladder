@@ -1,0 +1,125 @@
+.game {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 0.75rem 1rem;
+  user-select: none;
+}
+
+.timer {
+  position: absolute;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #f59e0b;
+  pointer-events: none;
+
+  &.urgent {
+    color: #ef4444;
+    animation: pulse 0.6s ease-in-out infinite alternate;
+  }
+}
+
+.scoreboard {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 3.5rem;
+}
+
+.scoreChip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.playerChip {
+  .chipLabel {
+    color: #818cf8;
+  }
+
+  &.active {
+    border-color: #818cf8;
+    background: rgba(99, 102, 241, 0.15);
+  }
+}
+
+.cpuChip {
+  .chipLabel {
+    color: #fca5a5;
+  }
+
+  &.active {
+    border-color: #fca5a5;
+    background: rgba(239, 68, 68, 0.15);
+  }
+}
+
+.chipLabel {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.chipVal {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+  min-width: 1.2ch;
+  text-align: center;
+}
+
+.scoreTotal {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.svgWrap {
+  width: 100%;
+  max-width: 420px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.turnHint {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 500;
+  text-align: center;
+  min-height: 1.2rem;
+}
+
+@keyframes pulse {
+  from {
+    transform: translateX(-50%) scale(1);
+  }
+  to {
+    transform: translateX(-50%) scale(1.12);
+  }
+}

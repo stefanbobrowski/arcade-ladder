@@ -1,4 +1,5 @@
-<svg width="240" height="48" viewBox="0 0 240 48" xmlns="http://www.w3.org/2000/svg">
+<svg width="380" height="48" viewBox="0 0 380 48" xmlns="http://www.w3.org/2000/svg">
+  <style>@import url('https://fonts.googleapis.com/css2?family=Russo+One&amp;display=swap');</style>
   <defs>
     <linearGradient id="circleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#7c3aed" />
@@ -30,5 +31,5 @@
   </g>
 
   <!-- Text -->
-  <text x="60" y="32" font-family="Roboto Slab, serif" font-size="20" font-weight="700" fill="url(#textGradient)">Arcade Ladder</text>
+  <text x="60" y="24" font-family="Russo One, sans-serif" font-size="30" font-weight="400" dominant-baseline="central" fill="url(#textGradient)">Arcade Ladder</text>
 </svg>
