@@ -51,6 +51,7 @@ const GAME_GRADIENTS: Record<string, [string, string]> = {
   'quick-math': ['#1d4ed8', '#5b21b6'],
   'color-sort': ['#c2410c', '#b45309'],
   'balloon-popper': ['#be185d', '#be123c'],
+  'match-game': ['#7c3aed', '#06b6d4'],
 };
 
 function GameCard({ game }: { game: GameWithRank }) {

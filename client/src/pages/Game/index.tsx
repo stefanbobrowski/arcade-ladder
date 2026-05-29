@@ -18,6 +18,7 @@ const GAME_COMPONENTS: Record<
   'quick-math': lazy(() => import('../../games/QuickMath')),
   'color-sort': lazy(() => import('../../games/ColorSort')),
   'balloon-popper': lazy(() => import('../../games/BalloonPopper')),
+  'match-game': lazy(() => import('../../games/MatchGame')),
 };
 
 export default function Game() {

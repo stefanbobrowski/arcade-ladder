@@ -36,7 +36,8 @@
     transform: translateX(-50%);
     font-size: 3.5rem;
     cursor: pointer;
-    animation: floatUp 3.5s linear forwards;
+    animation: floatUp var(--duration, 3.5s) ease-in-out forwards;
+    animation-fill-mode: both; // hides balloon during delay before it starts rising
     z-index: 1;
     transition: transform 0.1s;
 
@@ -51,10 +52,17 @@
 }
 
 @keyframes floatUp {
-  from {
+  0% {
+    transform: translateX(-50%) rotate(0deg);
     bottom: -80px;
   }
-  to {
+  40% {
+    transform: translateX(calc(-50% + var(--mid-drift, 0px)))
+      rotate(var(--mid-rot, 5deg));
+  }
+  100% {
+    transform: translateX(calc(-50% + var(--drift, 0px)))
+      rotate(var(--end-rot, -15deg));
     bottom: 110%;
   }
 }
