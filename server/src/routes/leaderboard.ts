@@ -50,9 +50,10 @@ export const leaderboardRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get('/stats', async () => {
     const { rows } = await fastify.db.query(
       `SELECT
-         (SELECT COUNT(*) FROM users) AS total_players,
-         (SELECT COUNT(*) FROM scores) AS total_plays,
-         (SELECT COUNT(*) FROM games WHERE is_active = TRUE) AS games_available`
+         (SELECT COUNT(*) FROM users)::int AS total_players,
+         (SELECT COUNT(*) FROM scores)::int AS total_plays,
+         (SELECT COUNT(*) FROM games WHERE is_active = TRUE)::int AS games_available,
+         (SELECT COUNT(DISTINCT user_id) FROM scores WHERE created_at > NOW() - INTERVAL '24 hours')::int AS active_today`
     );
     return rows[0];
   });

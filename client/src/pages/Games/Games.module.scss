@@ -77,12 +77,15 @@
   top: 0.6rem;
   right: 0.6rem;
   background: rgba(0, 0, 0, 0.6);
-  border: 1px solid #f59e0b88;
-  color: #f59e0b;
-  padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 0.2rem 0.5rem;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .cardBody {

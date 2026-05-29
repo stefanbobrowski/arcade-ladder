@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   HouseIcon,
-  GameControllerIcon,
-  TrophyIcon,
+  JoystickIcon,
+  LadderSimpleIcon,
   InfoIcon,
   StarIcon,
   type Icon,
@@ -15,8 +15,8 @@ import styles from './Navbar.module.scss';
 
 const NAV_LINKS: { to: string; label: string; Icon: Icon }[] = [
   { to: '/', label: 'Hub', Icon: HouseIcon },
-  { to: '/games', label: 'Games', Icon: GameControllerIcon },
-  { to: '/leaderboard', label: 'Leaderboard', Icon: TrophyIcon },
+  { to: '/arcade', label: 'Arcade', Icon: JoystickIcon },
+  { to: '/ladder', label: 'Ladder', Icon: LadderSimpleIcon },
   { to: '/about', label: 'About', Icon: InfoIcon },
 ];
 

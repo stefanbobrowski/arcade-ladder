@@ -93,6 +93,7 @@ for (let i = EMOJI_LIBRARY.length - 1; i > 0; i--) {
 }
 
 const LEVELS: [number, number][] = [
+  [3, 2],
   [4, 3],
   [4, 4],
   [6, 4],
@@ -137,8 +138,9 @@ export default function MatchGame({
   const [cards, setCards] = useState<Card[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [locked, setLocked] = useState(false);
-  const [flash, setFlash] = useState<'good' | 'bad' | null>(null);
   const [levelUp, setLevelUp] = useState(false);
+  const [badCards, setBadCards] = useState<number[]>([]);
+  const [goodCards, setGoodCards] = useState<number[]>([]);
 
   const scoreRef = useRef(0);
   const emojiOffset = useRef(0);
@@ -161,8 +163,9 @@ export default function MatchGame({
       setScore(0);
       setTimeLeft(GAME_DURATION);
       setLevel(0);
-      setFlash(null);
       setLevelUp(false);
+      setBadCards([]);
+      setGoodCards([]);
       startLevel(0);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -217,8 +220,8 @@ export default function MatchGame({
       scoreRef.current += pts;
       setScore(scoreRef.current);
       onScoreUpdate(scoreRef.current);
-      setFlash('good');
-      setTimeout(() => setFlash(null), 400);
+      setGoodCards([aId, bId]);
+      setTimeout(() => setGoodCards([]), 500);
 
       setCards((prev) => {
         const next = prev.map((c) =>
@@ -243,14 +246,14 @@ export default function MatchGame({
         return next;
       });
     } else {
-      setFlash('bad');
-      setTimeout(() => setFlash(null), 400);
+      setBadCards([aId, bId]);
       setTimeout(() => {
         setCards((prev) =>
           prev.map((c) =>
             c.id === aId || c.id === bId ? { ...c, flipped: false } : c
           )
         );
+        setBadCards([]);
         setLocked(false);
       }, FLIP_BACK_DELAY);
     }
@@ -258,16 +261,9 @@ export default function MatchGame({
 
   const [cols] = LEVELS[Math.min(level, LEVELS.length - 1)];
   const urgentTime = timeLeft <= 10;
-  const gameClass = [
-    styles.game,
-    flash === 'good' ? styles.flashGood : null,
-    flash === 'bad' ? styles.flashBad : null,
-  ]
-    .filter(Boolean)
-    .join(' ');
 
   return (
-    <div className={gameClass}>
+    <div className={styles.game}>
       <div
         className={
           urgentTime ? `${styles.timer} ${styles.urgent}` : styles.timer
@@ -278,7 +274,9 @@ export default function MatchGame({
       <div className={styles.score}>{score}</div>
       <div className={styles.levelBadge}>Level {level + 1}</div>
 
-      {levelUp && <div className={styles.levelUpBanner}>\u2728 Level Up!</div>}
+      {levelUp && (
+        <div className={styles.levelUpBanner}>✨ Level {level + 2}!</div>
+      )}
 
       <div
         key={gridKey}
@@ -290,6 +288,8 @@ export default function MatchGame({
             styles.cardScene,
             card.flipped || card.matched ? styles.flipped : null,
             card.matched ? styles.matched : null,
+            badCards.includes(card.id) ? styles.badCard : null,
+            goodCards.includes(card.id) ? styles.goodCard : null,
           ]
             .filter(Boolean)
             .join(' ');

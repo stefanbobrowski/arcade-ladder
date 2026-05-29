@@ -2,25 +2,26 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { GameProps } from '../../types';
 import styles from './DotsBoxes.module.scss';
 
-const DOTS = 7; // 7×7 grid → 6×6 = 36 boxes
-const GAME_DURATION = 30;
-const SP = 54; // SVG units between dots
+const ROUND_CONFIGS = [
+  { dots: 7, sp: 54 }, // round 1 — 6×6 boxes
+  { dots: 8, sp: 48 }, // round 2 — 7×7 boxes
+  { dots: 9, sp: 42 }, // round 3 — 8×8 boxes
+];
 const PAD = 20;
 const DOT_R = 5;
 const HIT = 20; // click-zone thickness (half)
-const SVG_DIM = (DOTS - 1) * SP + PAD * 2; // 364
 const CPU_DELAY = 420;
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
-function makeH(): boolean[][] {
-  return Array.from({ length: DOTS }, () => Array(DOTS - 1).fill(false));
+function makeH(dots: number): boolean[][] {
+  return Array.from({ length: dots }, () => Array(dots - 1).fill(false));
 }
-function makeV(): boolean[][] {
-  return Array.from({ length: DOTS - 1 }, () => Array(DOTS).fill(false));
+function makeV(dots: number): boolean[][] {
+  return Array.from({ length: dots - 1 }, () => Array(dots).fill(false));
 }
-function makeBoxes(): (string | null)[][] {
-  return Array.from({ length: DOTS - 1 }, () => Array(DOTS - 1).fill(null));
+function makeBoxes(dots: number): (string | null)[][] {
+  return Array.from({ length: dots - 1 }, () => Array(dots - 1).fill(null));
 }
 
 function boxSides(
@@ -32,17 +33,17 @@ function boxSides(
   return +h[r][c] + +h[r + 1][c] + +v[r][c] + +v[r][c + 1];
 }
 
-function hAdjBoxes(r: number, c: number): [number, number][] {
+function hAdjBoxes(r: number, c: number, dots: number): [number, number][] {
   const res: [number, number][] = [];
   if (r > 0) res.push([r - 1, c]);
-  if (r < DOTS - 1) res.push([r, c]);
+  if (r < dots - 1) res.push([r, c]);
   return res;
 }
 
-function vAdjBoxes(r: number, c: number): [number, number][] {
+function vAdjBoxes(r: number, c: number, dots: number): [number, number][] {
   const res: [number, number][] = [];
   if (c > 0) res.push([r, c - 1]);
-  if (c < DOTS - 1) res.push([r, c]);
+  if (c < dots - 1) res.push([r, c]);
   return res;
 }
 
@@ -60,17 +61,18 @@ function applyMove(
   h: boolean[][],
   v: boolean[][],
   boxes: (string | null)[][],
-  owner: string
+  owner: string,
+  dots: number
 ): MoveResult {
   const nh = h.map((row) => [...row]);
   const nv = v.map((row) => [...row]);
   const nb = boxes.map((row) => [...row]);
   if (type === 'h') nh[r][c] = true;
   else nv[r][c] = true;
-  const adj = type === 'h' ? hAdjBoxes(r, c) : vAdjBoxes(r, c);
+  const adj = type === 'h' ? hAdjBoxes(r, c, dots) : vAdjBoxes(r, c, dots);
   let scored = 0;
   for (const [br, bc] of adj) {
-    if (br < 0 || br >= DOTS - 1 || bc < 0 || bc >= DOTS - 1) continue;
+    if (br < 0 || br >= dots - 1 || bc < 0 || bc >= dots - 1) continue;
     if (nb[br][bc]) continue;
     if (nh[br][bc] && nh[br + 1][bc] && nv[br][bc] && nv[br][bc + 1]) {
       nb[br][bc] = owner;
@@ -82,14 +84,15 @@ function applyMove(
 
 function allAvailable(
   h: boolean[][],
-  v: boolean[][]
+  v: boolean[][],
+  dots: number
 ): { type: 'h' | 'v'; r: number; c: number }[] {
   const moves: { type: 'h' | 'v'; r: number; c: number }[] = [];
-  for (let r = 0; r < DOTS; r++)
-    for (let c = 0; c < DOTS - 1; c++)
+  for (let r = 0; r < dots; r++)
+    for (let c = 0; c < dots - 1; c++)
       if (!h[r][c]) moves.push({ type: 'h', r, c });
-  for (let r = 0; r < DOTS - 1; r++)
-    for (let c = 0; c < DOTS; c++)
+  for (let r = 0; r < dots - 1; r++)
+    for (let c = 0; c < dots; c++)
       if (!v[r][c]) moves.push({ type: 'v', r, c });
   return moves;
 }
@@ -99,15 +102,16 @@ function exposesBox(
   r: number,
   c: number,
   h: boolean[][],
-  v: boolean[][]
+  v: boolean[][],
+  dots: number
 ): boolean {
   const nh = h.map((row) => [...row]);
   const nv = v.map((row) => [...row]);
   if (type === 'h') nh[r][c] = true;
   else nv[r][c] = true;
-  const adj = type === 'h' ? hAdjBoxes(r, c) : vAdjBoxes(r, c);
+  const adj = type === 'h' ? hAdjBoxes(r, c, dots) : vAdjBoxes(r, c, dots);
   return adj.some(([br, bc]) => {
-    if (br < 0 || br >= DOTS - 1 || bc < 0 || bc >= DOTS - 1) return false;
+    if (br < 0 || br >= dots - 1 || bc < 0 || bc >= dots - 1) return false;
     return boxSides(br, bc, nh, nv) === 3;
   });
 }
@@ -115,16 +119,18 @@ function exposesBox(
 function cpuChooseMove(
   h: boolean[][],
   v: boolean[][],
-  boxes: (string | null)[][]
+  boxes: (string | null)[][],
+  dots: number
 ): { type: 'h' | 'v'; r: number; c: number } | null {
-  const moves = allAvailable(h, v);
+  const moves = allAvailable(h, v, dots);
   if (!moves.length) return null;
 
   // 1. Complete a box immediately
   const completing = moves.filter((m) => {
-    const adj = m.type === 'h' ? hAdjBoxes(m.r, m.c) : vAdjBoxes(m.r, m.c);
+    const adj =
+      m.type === 'h' ? hAdjBoxes(m.r, m.c, dots) : vAdjBoxes(m.r, m.c, dots);
     return adj.some(([br, bc]) => {
-      if (br < 0 || br >= DOTS - 1 || bc < 0 || bc >= DOTS - 1 || boxes[br][bc])
+      if (br < 0 || br >= dots - 1 || bc < 0 || bc >= dots - 1 || boxes[br][bc])
         return false;
       return boxSides(br, bc, h, v) === 3;
     });
@@ -132,7 +138,7 @@ function cpuChooseMove(
   if (completing.length) return completing[0];
 
   // 2. Safe move: doesn't gift a 3-sided box
-  const safe = moves.filter((m) => !exposesBox(m.type, m.r, m.c, h, v));
+  const safe = moves.filter((m) => !exposesBox(m.type, m.r, m.c, h, v, dots));
   if (safe.length) return safe[Math.floor(Math.random() * safe.length)];
 
   // 3. Sacrifice: pick the move that exposes the fewest 3-sided boxes
@@ -143,9 +149,10 @@ function cpuChooseMove(
     const nv = v.map((row) => [...row]);
     if (m.type === 'h') nh[m.r][m.c] = true;
     else nv[m.r][m.c] = true;
-    const adj = m.type === 'h' ? hAdjBoxes(m.r, m.c) : vAdjBoxes(m.r, m.c);
+    const adj =
+      m.type === 'h' ? hAdjBoxes(m.r, m.c, dots) : vAdjBoxes(m.r, m.c, dots);
     const count = adj.filter(([br, bc]) => {
-      if (br < 0 || br >= DOTS - 1 || bc < 0 || bc >= DOTS - 1) return false;
+      if (br < 0 || br >= dots - 1 || bc < 0 || bc >= dots - 1) return false;
       return boxSides(br, bc, nh, nv) === 3;
     }).length;
     if (count < bestCount) {
@@ -163,13 +170,14 @@ export default function DotsBoxes({
   onGameOver,
   isPlaying,
 }: GameProps) {
-  const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
-  const [hLines, setHLines] = useState(makeH);
-  const [vLines, setVLines] = useState(makeV);
-  const [boxes, setBoxes] = useState(makeBoxes);
+  const [round, setRound] = useState(0);
+  const [hLines, setHLines] = useState(() => makeH(ROUND_CONFIGS[0].dots));
+  const [vLines, setVLines] = useState(() => makeV(ROUND_CONFIGS[0].dots));
+  const [boxes, setBoxes] = useState(() => makeBoxes(ROUND_CONFIGS[0].dots));
   const [isPlayerTurn, setIsPlayerTurn] = useState(true);
   const [playerBoxes, setPlayerBoxes] = useState(0);
   const [cpuBoxes, setCpuBoxes] = useState(0);
+  const [winOverlay, setWinOverlay] = useState(false);
   const [hover, setHover] = useState<{
     type: 'h' | 'v';
     r: number;
@@ -178,29 +186,44 @@ export default function DotsBoxes({
 
   const scoreRef = useRef(0);
   const isPlayingRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cpuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const roundRef = useRef(0);
 
   const scheduleCpu = useCallback(
-    (h: boolean[][], v: boolean[][], bxs: (string | null)[][]) => {
+    (
+      h: boolean[][],
+      v: boolean[][],
+      bxs: (string | null)[][],
+      dots: number
+    ) => {
       cpuTimerRef.current = setTimeout(() => {
         if (!isPlayingRef.current) return;
-        const move = cpuChooseMove(h, v, bxs);
+        const move = cpuChooseMove(h, v, bxs, dots);
         if (!move) {
           setIsPlayerTurn(true);
           return;
         }
-        const res = applyMove(move.type, move.r, move.c, h, v, bxs, 'cpu');
+        const res = applyMove(
+          move.type,
+          move.r,
+          move.c,
+          h,
+          v,
+          bxs,
+          'cpu',
+          dots
+        );
         setHLines(res.h);
         setVLines(res.v);
         setBoxes(res.boxes);
         if (res.scored > 0) {
           setCpuBoxes((s) => s + res.scored);
           if (res.boxes.every((row) => row.every((b) => b !== null))) {
+            // CPU wins this round — game over
             onGameOver(scoreRef.current);
             return;
           }
-          scheduleCpu(res.h, res.v, res.boxes); // CPU goes again
+          scheduleCpu(res.h, res.v, res.boxes, dots); // CPU goes again
         } else {
           setIsPlayerTurn(true);
         }
@@ -212,42 +235,32 @@ export default function DotsBoxes({
   useEffect(() => {
     if (isPlaying) {
       isPlayingRef.current = true;
+      roundRef.current = 0;
       if (cpuTimerRef.current) clearTimeout(cpuTimerRef.current);
       scoreRef.current = 0;
-      setHLines(makeH());
-      setVLines(makeV());
-      setBoxes(makeBoxes());
+      const { dots } = ROUND_CONFIGS[0];
+      setRound(0);
+      setHLines(makeH(dots));
+      setVLines(makeV(dots));
+      setBoxes(makeBoxes(dots));
       setIsPlayerTurn(true);
       setPlayerBoxes(0);
       setCpuBoxes(0);
-      setTimeLeft(GAME_DURATION);
+      setWinOverlay(false);
       setHover(null);
     } else {
       isPlayingRef.current = false;
-      if (timerRef.current) clearInterval(timerRef.current);
       if (cpuTimerRef.current) clearTimeout(cpuTimerRef.current);
     }
   }, [isPlaying]);
 
-  useEffect(() => {
-    if (!isPlaying) return;
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        const next = t <= 1 ? 0 : t - 1;
-        if (next === 0) clearInterval(timerRef.current!);
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current!);
-  }, [isPlaying]);
-
-  useEffect(() => {
-    if (timeLeft === 0 && isPlaying) onGameOver(scoreRef.current);
-  }, [timeLeft, isPlaying, onGameOver]);
+  const { dots, sp } = ROUND_CONFIGS[Math.min(round, ROUND_CONFIGS.length - 1)];
+  const svgDim = (dots - 1) * sp + PAD * 2;
+  const total = (dots - 1) * (dots - 1);
 
   function handleLineClick(type: 'h' | 'v', r: number, c: number) {
-    if (!isPlaying || !isPlayerTurn) return;
-    const res = applyMove(type, r, c, hLines, vLines, boxes, 'player');
+    if (!isPlaying || !isPlayerTurn || winOverlay) return;
+    const res = applyMove(type, r, c, hLines, vLines, boxes, 'player', dots);
     setHLines(res.h);
     setVLines(res.v);
     setBoxes(res.boxes);
@@ -255,29 +268,59 @@ export default function DotsBoxes({
     if (res.scored > 0) {
       const newScore = scoreRef.current + res.scored * 20;
       scoreRef.current = newScore;
-      setPlayerBoxes((p) => p + res.scored);
+      const newPlayerBoxes = playerBoxes + res.scored;
+      setPlayerBoxes(newPlayerBoxes);
       onScoreUpdate(newScore);
       if (res.boxes.every((row) => row.every((b) => b !== null))) {
-        onGameOver(newScore);
+        // Board fully filled
+        const cpuCount = res.boxes.flat().filter((b) => b === 'cpu').length;
+        const playerCount = res.boxes
+          .flat()
+          .filter((b) => b === 'player').length;
+        if (playerCount > cpuCount) {
+          // Player wins this round
+          const nextRound = roundRef.current + 1;
+          if (nextRound >= ROUND_CONFIGS.length) {
+            // All 3 rounds complete
+            onGameOver(newScore);
+          } else {
+            setWinOverlay(true);
+          }
+        } else {
+          onGameOver(newScore);
+        }
         return;
       }
       // player scored → goes again, isPlayerTurn stays true
     } else {
       setIsPlayerTurn(false);
-      scheduleCpu(res.h, res.v, res.boxes);
+      scheduleCpu(res.h, res.v, res.boxes, dots);
     }
   }
 
-  const total = (DOTS - 1) * (DOTS - 1);
-  const urgentTime = timeLeft <= 10;
+  function handleNextRound() {
+    if (!isPlayingRef.current) return;
+    const nextRound = roundRef.current + 1;
+    roundRef.current = nextRound;
+    const { dots: nextDots } = ROUND_CONFIGS[nextRound];
+    setRound(nextRound);
+    setHLines(makeH(nextDots));
+    setVLines(makeV(nextDots));
+    setBoxes(makeBoxes(nextDots));
+    setIsPlayerTurn(true);
+    setPlayerBoxes(0);
+    setCpuBoxes(0);
+    setWinOverlay(false);
+    setHover(null);
+  }
 
   const hoverLine =
-    hover && isPlaying && isPlayerTurn ? (
+    hover && isPlaying && isPlayerTurn && !winOverlay ? (
       <line
-        x1={PAD + hover.c * SP}
-        y1={PAD + hover.r * SP}
-        x2={hover.type === 'h' ? PAD + (hover.c + 1) * SP : PAD + hover.c * SP}
-        y2={hover.type === 'h' ? PAD + hover.r * SP : PAD + (hover.r + 1) * SP}
+        x1={PAD + hover.c * sp}
+        y1={PAD + hover.r * sp}
+        x2={hover.type === 'h' ? PAD + (hover.c + 1) * sp : PAD + hover.c * sp}
+        y2={hover.type === 'h' ? PAD + hover.r * sp : PAD + (hover.r + 1) * sp}
         stroke='rgba(99,102,241,0.75)'
         strokeWidth={3}
         strokeLinecap='round'
@@ -287,17 +330,9 @@ export default function DotsBoxes({
 
   return (
     <div className={styles.game}>
-      <div
-        className={
-          urgentTime ? `${styles.timer} ${styles.urgent}` : styles.timer
-        }
-      >
-        {timeLeft}s
-      </div>
-
       <div className={styles.scoreboard}>
         <div
-          className={`${styles.scoreChip} ${styles.playerChip} ${isPlaying && isPlayerTurn ? styles.active : ''}`}
+          className={`${styles.scoreChip} ${styles.playerChip} ${isPlaying && isPlayerTurn && !winOverlay ? styles.active : ''}`}
         >
           <span className={styles.chipLabel}>You</span>
           <span className={styles.chipVal}>{playerBoxes}</span>
@@ -306,7 +341,7 @@ export default function DotsBoxes({
           {total - playerBoxes - cpuBoxes} left
         </div>
         <div
-          className={`${styles.scoreChip} ${styles.cpuChip} ${isPlaying && !isPlayerTurn ? styles.active : ''}`}
+          className={`${styles.scoreChip} ${styles.cpuChip} ${isPlaying && !isPlayerTurn && !winOverlay ? styles.active : ''}`}
         >
           <span className={styles.chipLabel}>CPU</span>
           <span className={styles.chipVal}>{cpuBoxes}</span>
@@ -315,7 +350,7 @@ export default function DotsBoxes({
 
       <div className={styles.svgWrap}>
         <svg
-          viewBox={`0 0 ${SVG_DIM} ${SVG_DIM}`}
+          viewBox={`0 0 ${svgDim} ${svgDim}`}
           className={styles.svg}
           onMouseLeave={() => setHover(null)}
         >
@@ -325,10 +360,10 @@ export default function DotsBoxes({
               owner ? (
                 <rect
                   key={`bf-${r}-${c}`}
-                  x={PAD + c * SP + 2}
-                  y={PAD + r * SP + 2}
-                  width={SP - 4}
-                  height={SP - 4}
+                  x={PAD + c * sp + 2}
+                  y={PAD + r * sp + 2}
+                  width={sp - 4}
+                  height={sp - 4}
                   rx={3}
                   fill={
                     owner === 'player'
@@ -346,10 +381,10 @@ export default function DotsBoxes({
               drawn ? (
                 <line
                   key={`hl-${r}-${c}`}
-                  x1={PAD + c * SP}
-                  y1={PAD + r * SP}
-                  x2={PAD + (c + 1) * SP}
-                  y2={PAD + r * SP}
+                  x1={PAD + c * sp}
+                  y1={PAD + r * sp}
+                  x2={PAD + (c + 1) * sp}
+                  y2={PAD + r * sp}
                   stroke='rgba(255,255,255,0.9)'
                   strokeWidth={3}
                   strokeLinecap='round'
@@ -364,10 +399,10 @@ export default function DotsBoxes({
               drawn ? (
                 <line
                   key={`vl-${r}-${c}`}
-                  x1={PAD + c * SP}
-                  y1={PAD + r * SP}
-                  x2={PAD + c * SP}
-                  y2={PAD + (r + 1) * SP}
+                  x1={PAD + c * sp}
+                  y1={PAD + r * sp}
+                  x2={PAD + c * sp}
+                  y2={PAD + (r + 1) * sp}
                   stroke='rgba(255,255,255,0.9)'
                   strokeWidth={3}
                   strokeLinecap='round'
@@ -384,13 +419,16 @@ export default function DotsBoxes({
               !drawn ? (
                 <rect
                   key={`hh-${r}-${c}`}
-                  x={PAD + c * SP}
-                  y={PAD + r * SP - HIT / 2}
-                  width={SP}
+                  x={PAD + c * sp}
+                  y={PAD + r * sp - HIT / 2}
+                  width={sp}
                   height={HIT}
                   fill='transparent'
                   style={{
-                    cursor: isPlaying && isPlayerTurn ? 'pointer' : 'default',
+                    cursor:
+                      isPlaying && isPlayerTurn && !winOverlay
+                        ? 'pointer'
+                        : 'default',
                   }}
                   onMouseEnter={() => setHover({ type: 'h', r, c })}
                   onMouseLeave={() => setHover(null)}
@@ -406,13 +444,16 @@ export default function DotsBoxes({
               !drawn ? (
                 <rect
                   key={`vh-${r}-${c}`}
-                  x={PAD + c * SP - HIT / 2}
-                  y={PAD + r * SP}
+                  x={PAD + c * sp - HIT / 2}
+                  y={PAD + r * sp}
                   width={HIT}
-                  height={SP}
+                  height={sp}
                   fill='transparent'
                   style={{
-                    cursor: isPlaying && isPlayerTurn ? 'pointer' : 'default',
+                    cursor:
+                      isPlaying && isPlayerTurn && !winOverlay
+                        ? 'pointer'
+                        : 'default',
                   }}
                   onMouseEnter={() => setHover({ type: 'v', r, c })}
                   onMouseLeave={() => setHover(null)}
@@ -428,8 +469,8 @@ export default function DotsBoxes({
               owner ? (
                 <text
                   key={`bt-${r}-${c}`}
-                  x={PAD + c * SP + SP / 2}
-                  y={PAD + r * SP + SP / 2 + 6}
+                  x={PAD + c * sp + sp / 2}
+                  y={PAD + r * sp + sp / 2 + 6}
                   textAnchor='middle'
                   fontSize={15}
                   fontWeight='800'
@@ -443,12 +484,12 @@ export default function DotsBoxes({
           )}
 
           {/* Dots */}
-          {Array.from({ length: DOTS }, (_, r) =>
-            Array.from({ length: DOTS }, (_, c) => (
+          {Array.from({ length: dots }, (_, r) =>
+            Array.from({ length: dots }, (_, c) => (
               <circle
                 key={`d-${r}-${c}`}
-                cx={PAD + c * SP}
-                cy={PAD + r * SP}
+                cx={PAD + c * sp}
+                cy={PAD + r * sp}
                 r={DOT_R}
                 fill='white'
                 style={{ pointerEvents: 'none' }}
@@ -458,11 +499,25 @@ export default function DotsBoxes({
         </svg>
       </div>
 
-      {isPlaying && (
+      {isPlaying && !winOverlay && (
         <div className={styles.turnHint}>
           {isPlayerTurn
             ? '⬆ Your turn — click a line segment'
             : '⏳ CPU thinking…'}
+        </div>
+      )}
+
+      {winOverlay && (
+        <div className={styles.winOverlay}>
+          <div className={styles.winCard}>
+            <div className={styles.winTitle}>
+              🏆 Round {round + 1} Complete!
+            </div>
+            <div className={styles.winScore}>Score: {scoreRef.current}</div>
+            <button className={styles.nextRoundBtn} onClick={handleNextRound}>
+              Round {round + 2} →
+            </button>
+          </div>
         </div>
       )}
     </div>

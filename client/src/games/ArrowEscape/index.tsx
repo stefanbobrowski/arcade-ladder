@@ -23,36 +23,44 @@ const SNAKE_COLORS = [
 
 type Dir = 'up' | 'down' | 'left' | 'right';
 
+// Each snake is an ordered path (tail → head).
+// headDir = direction the head wants to exit the grid.
+// Body cell arrows point toward the next cell; head arrow points in headDir.
 interface Snake {
   id: number;
-  // cells sorted ascending: left→right for horizontal, top→bottom for vertical
   cells: [number, number][];
-  dir: Dir;
+  headDir: Dir;
   color: string;
 }
 
-const ARROW: Record<Dir, string> = {
+const ARROW_CHAR: Record<Dir, string> = {
   up: '▲',
   down: '▼',
   left: '◀',
   right: '▶',
 };
 
-function getDelta(dir: Dir): [number, number] {
-  return dir === 'up'
-    ? [-1, 0]
-    : dir === 'down'
-      ? [1, 0]
-      : dir === 'left'
-        ? [0, -1]
-        : [0, 1];
+const DELTAS: Record<Dir, [number, number]> = {
+  up: [-1, 0],
+  down: [1, 0],
+  left: [0, -1],
+  right: [0, 1],
+};
+
+const ALL_DIRS: Dir[] = ['up', 'down', 'left', 'right'];
+
+function dirBetween(from: [number, number], to: [number, number]): Dir {
+  if (to[0] < from[0]) return 'up';
+  if (to[0] > from[0]) return 'down';
+  if (to[1] < from[1]) return 'left';
+  return 'right';
 }
 
-// The head is the cell that leads in the movement direction
-function getHead(snake: Snake): [number, number] {
-  return snake.dir === 'right' || snake.dir === 'down'
-    ? snake.cells[snake.cells.length - 1]
-    : snake.cells[0];
+function cellDir(snake: Snake, idx: number): Dir {
+  if (idx < snake.cells.length - 1) {
+    return dirBetween(snake.cells[idx], snake.cells[idx + 1]);
+  }
+  return snake.headDir;
 }
 
 function buildGrid(snakes: Snake[]): (number | null)[][] {
@@ -63,71 +71,95 @@ function buildGrid(snakes: Snake[]): (number | null)[][] {
   return g;
 }
 
-// Check whether this snake can escape. Grid must have snake's own cells cleared.
-function checkMove(
-  snake: Snake,
-  grid: (number | null)[][]
-): 'escape' | 'blocked' {
-  const [hr, hc] = getHead(snake);
-  const [dr, dc] = getDelta(snake.dir);
-  let r = hr + dr,
-    c = hc + dc;
-  while (r >= 0 && r < GRID && c >= 0 && c < GRID) {
-    if (grid[r][c] !== null) return 'blocked';
-    r += dr;
-    c += dc;
-  }
-  return 'escape';
+// A snake can escape if the single cell directly ahead of its head is free
+// (or off-grid). Its curved body will vacate cells as it flows out.
+function canEscape(snake: Snake, grid: (number | null)[][]): boolean {
+  const head = snake.cells[snake.cells.length - 1];
+  const [dr, dc] = DELTAS[snake.headDir];
+  const nr = head[0] + dr;
+  const nc = head[1] + dc;
+  if (nr < 0 || nr >= GRID || nc < 0 || nc >= GRID) return true;
+  return grid[nr][nc] === null;
 }
 
-function placeSnakes(
+// Random-walk snake placement. Snakes prefer to continue in the same direction
+// (~60% chance) giving them gentle curves rather than pure random noise.
+function randomWalkSnake(
+  grid: (number | null)[][],
+  id: number,
+  color: string
+): Snake | null {
+  const freeCells: [number, number][] = [];
+  for (let r = 0; r < GRID; r++)
+    for (let c = 0; c < GRID; c++)
+      if (grid[r][c] === null) freeCells.push([r, c]);
+  if (freeCells.length < 3) return null;
+
+  for (let attempt = 0; attempt < 80; attempt++) {
+    const [sr, sc] = freeCells[Math.floor(Math.random() * freeCells.length)];
+    const targetLen = 3 + Math.floor(Math.random() * 4); // 3–6 cells
+
+    const cells: [number, number][] = [[sr, sc]];
+    const usedSet = new Set<string>([`${sr},${sc}`]);
+    let lastDir: Dir = ALL_DIRS[Math.floor(Math.random() * 4)];
+
+    while (cells.length < targetLen) {
+      const [cr, cc] = cells[cells.length - 1];
+
+      // Prefer last direction, fall back to shuffled others
+      const others = ALL_DIRS.filter((d) => d !== lastDir).sort(
+        () => Math.random() - 0.5
+      );
+      const dirs =
+        Math.random() < 0.6 ? [lastDir, ...others] : [...others, lastDir];
+
+      let moved = false;
+      for (const dir of dirs) {
+        const [dr, dc] = DELTAS[dir];
+        const nr = cr + dr;
+        const nc = cc + dc;
+        if (
+          nr >= 0 &&
+          nr < GRID &&
+          nc >= 0 &&
+          nc < GRID &&
+          grid[nr][nc] === null &&
+          !usedSet.has(`${nr},${nc}`)
+        ) {
+          cells.push([nr, nc]);
+          usedSet.add(`${nr},${nc}`);
+          lastDir = dir;
+          moved = true;
+          break;
+        }
+      }
+      if (!moved) break;
+    }
+
+    if (cells.length >= 3) {
+      return { id, cells, headDir: lastDir, color };
+    }
+  }
+  return null;
+}
+
+function buildSnakePack(
   count: number,
   grid: (number | null)[][],
   startId: number,
   colorOffset: number
 ): Snake[] {
   const g = grid.map((row) => [...row]);
-  const placed: Snake[] = [];
-  let id = startId;
-  let attempts = 0;
-  while (placed.length < count && attempts < 500) {
-    attempts++;
-    const horiz = Math.random() < 0.5;
-    const len = 3 + Math.floor(Math.random() * 4); // 3–6
-    let cells: [number, number][];
-    if (horiz) {
-      const r = Math.floor(Math.random() * GRID);
-      const c = Math.floor(Math.random() * (GRID - len + 1));
-      cells = Array.from(
-        { length: len },
-        (_, i) => [r, c + i] as [number, number]
-      );
-    } else {
-      const r = Math.floor(Math.random() * (GRID - len + 1));
-      const c = Math.floor(Math.random() * GRID);
-      cells = Array.from(
-        { length: len },
-        (_, i) => [r + i, c] as [number, number]
-      );
+  const snakes: Snake[] = [];
+  for (let i = 0; i < count; i++) {
+    const color = SNAKE_COLORS[(colorOffset + i) % SNAKE_COLORS.length];
+    const snake = randomWalkSnake(g, startId + i, color);
+    if (snake) {
+      snakes.push(snake);
+      for (const [r, c] of snake.cells) g[r][c] = snake.id;
     }
-    if (cells.some(([r, c]) => g[r][c] !== null)) continue;
-    const dir: Dir = horiz
-      ? Math.random() < 0.5
-        ? 'right'
-        : 'left'
-      : Math.random() < 0.5
-        ? 'down'
-        : 'up';
-    const snake: Snake = {
-      id: id++,
-      cells,
-      dir,
-      color: SNAKE_COLORS[(colorOffset + placed.length) % SNAKE_COLORS.length],
-    };
-    placed.push(snake);
-    for (const [r, c] of cells) g[r][c] = snake.id;
   }
-  return placed;
+  return snakes;
 }
 
 export default function ArrowEscape({
@@ -149,7 +181,6 @@ export default function ArrowEscape({
   const colorOffsetRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lockedRef = useRef(false);
-  // Ref mirror of snakes so setTimeout callbacks read latest state
   const snakesRef = useRef<Snake[]>([]);
   snakesRef.current = snakes;
 
@@ -160,7 +191,7 @@ export default function ArrowEscape({
     snakeIdRef.current = 0;
     exitedRef.current = 0;
     colorOffsetRef.current = 0;
-    const initial = placeSnakes(8, emptyGrid, 0, 0);
+    const initial = buildSnakePack(8, emptyGrid, 0, 0);
     snakeIdRef.current = initial.length;
     return initial;
   }, []);
@@ -204,10 +235,10 @@ export default function ArrowEscape({
 
     lockedRef.current = true;
     const grid = buildGrid(snakesRef.current);
-    // Clear the snake's own cells so it doesn't block itself
+    // Clear own cells so the snake doesn't block itself
     for (const [r, c] of snake.cells) grid[r][c] = null;
 
-    if (checkMove(snake, grid) === 'escape') {
+    if (canEscape(snake, grid)) {
       setExitingId(snakeId);
       setFlash('good');
       const pts = snake.cells.length * 10;
@@ -221,11 +252,10 @@ export default function ArrowEscape({
         exitedRef.current++;
         const remaining = snakesRef.current.filter((s) => s.id !== snakeId);
         let nextSnakes = remaining;
-        // Every 3 escapes, spawn 2 fresh snakes
         if (exitedRef.current % 3 === 0) {
           const newGrid = buildGrid(remaining);
           colorOffsetRef.current += 2;
-          const spawned = placeSnakes(
+          const spawned = buildSnakePack(
             2,
             newGrid,
             snakeIdRef.current,
@@ -238,7 +268,6 @@ export default function ArrowEscape({
         lockedRef.current = false;
       }, 400);
     } else {
-      // Collision → game over
       setFlash('bad');
       setGameEnded(true);
       if (timerRef.current) clearInterval(timerRef.current);
@@ -246,14 +275,14 @@ export default function ArrowEscape({
     }
   }
 
-  // Compute hover preview (escape = green glow, blocked = red glow)
+  // Hover preview
   const hoverSnake =
     hoverId !== null ? (snakes.find((s) => s.id === hoverId) ?? null) : null;
   let hoverResult: 'escape' | 'blocked' | null = null;
   if (hoverSnake && isPlaying && !gameEnded) {
     const g = buildGrid(snakes);
     for (const [r, c] of hoverSnake.cells) g[r][c] = null;
-    hoverResult = checkMove(hoverSnake, g);
+    hoverResult = canEscape(hoverSnake, g) ? 'escape' : 'blocked';
   }
 
   const urgentTime = timeLeft <= 10;
@@ -282,7 +311,7 @@ export default function ArrowEscape({
           className={styles.svg}
           onMouseLeave={() => setHoverId(null)}
         >
-          {/* Grid background dots */}
+          {/* Grid background cells */}
           {Array.from({ length: GRID }, (_, r) =>
             Array.from({ length: GRID }, (_, c) => (
               <rect
@@ -301,7 +330,7 @@ export default function ArrowEscape({
           {snakes.map((snake) => {
             const isHovered = hoverId === snake.id;
             const isExiting = exitingId === snake.id;
-            const head = getHead(snake);
+            const head = snake.cells[snake.cells.length - 1];
             const glowColor =
               isHovered && hoverResult === 'escape'
                 ? '#22c55e'
@@ -314,7 +343,7 @@ export default function ArrowEscape({
                 key={snake.id}
                 style={{
                   cursor: isPlaying && !gameEnded ? 'pointer' : 'default',
-                  opacity: isExiting ? 0.15 : 1,
+                  opacity: isExiting ? 0.1 : 1,
                   transition: 'opacity 0.35s',
                 }}
                 onClick={() => handleSnakeClick(snake.id)}
@@ -333,7 +362,7 @@ export default function ArrowEscape({
                       height={CELL - 8}
                       rx={8}
                       fill={glowColor ?? snake.color}
-                      opacity={isHead ? 1 : 0.72}
+                      opacity={isHead ? 1 : 0.7}
                       stroke={glowColor ?? 'transparent'}
                       strokeWidth={glowColor ? 2 : 0}
                     />
@@ -342,45 +371,51 @@ export default function ArrowEscape({
 
                 {/* Connector bridges between adjacent cells */}
                 {snake.cells.slice(0, -1).map(([r, c], idx) => {
-                  const [nr, _nc] = snake.cells[idx + 1];
-                  const isH = r === nr;
+                  const [nr, nc] = snake.cells[idx + 1];
+                  const isH = r === nr; // same row → horizontal bridge
+                  const minC = Math.min(c, nc);
+                  const minR = Math.min(r, nr);
                   return isH ? (
-                    // Horizontal bridge: fills gap between cell [r,c] and [r,c+1]
                     <rect
                       key={`br-${idx}`}
-                      x={PAD + (c + 1) * CELL - 4}
+                      x={PAD + (minC + 1) * CELL - 4}
                       y={PAD + r * CELL + 4}
                       width={8}
                       height={CELL - 8}
                       fill={glowColor ?? snake.color}
-                      opacity={0.72}
+                      opacity={0.7}
                     />
                   ) : (
-                    // Vertical bridge: fills gap between cell [r,c] and [r+1,c]
                     <rect
                       key={`br-${idx}`}
                       x={PAD + c * CELL + 4}
-                      y={PAD + (r + 1) * CELL - 4}
+                      y={PAD + (minR + 1) * CELL - 4}
                       width={CELL - 8}
                       height={8}
                       fill={glowColor ?? snake.color}
-                      opacity={0.72}
+                      opacity={0.7}
                     />
                   );
                 })}
 
-                {/* Direction arrow on head */}
-                <text
-                  x={PAD + head[1] * CELL + CELL / 2}
-                  y={PAD + head[0] * CELL + CELL / 2 + 6}
-                  textAnchor='middle'
-                  fontSize={16}
-                  fontWeight='900'
-                  fill='rgba(255,255,255,0.9)'
-                  style={{ pointerEvents: 'none', userSelect: 'none' }}
-                >
-                  {ARROW[snake.dir]}
-                </text>
+                {/* Per-cell direction arrows */}
+                {snake.cells.map(([r, c], idx) => {
+                  const dir = cellDir(snake, idx);
+                  return (
+                    <text
+                      key={`arr-${idx}`}
+                      x={PAD + c * CELL + CELL / 2}
+                      y={PAD + r * CELL + CELL / 2 + 6}
+                      textAnchor='middle'
+                      fontSize={14}
+                      fontWeight='900'
+                      fill='rgba(255,255,255,0.9)'
+                      style={{ pointerEvents: 'none', userSelect: 'none' }}
+                    >
+                      {ARROW_CHAR[dir]}
+                    </text>
+                  );
+                })}
               </g>
             );
           })}

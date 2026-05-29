@@ -3,7 +3,14 @@ import { Link } from 'react-router-dom';
 import api from '../../api/client';
 import type { Game } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import { MedalIcon } from '@phosphor-icons/react';
 import styles from './Games.module.scss';
+
+const MEDAL_COLORS: Record<number, string> = {
+  1: '#f59e0b',
+  2: '#a8bccf',
+  3: '#c07030',
+};
 
 interface GameWithRank extends Game {
   user_rank?: number | null;
@@ -31,10 +38,8 @@ export default function Games() {
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.heading}>Game Gallery</h1>
-      <p className={styles.subheading}>
-        Pick your challenge and climb the ranks
-      </p>
+      <h1 className={styles.heading}>Arcade</h1>
+      <p className={styles.subheading}>Pick your game and climb the ranks</p>
       <div className={styles.grid}>
         {games.map((game) => (
           <GameCard key={game.slug} game={game} />
@@ -49,23 +54,31 @@ const GAME_GRADIENTS: Record<string, [string, string]> = {
   'reaction-grid': ['#6d28d9', '#4338ca'],
   'pattern-memory': ['#047857', '#0f766e'],
   'quick-math': ['#1d4ed8', '#5b21b6'],
-  'color-sort': ['#c2410c', '#b45309'],
-  'balloon-popper': ['#be185d', '#be123c'],
+  'solution-color-sort': ['#1e11db', '#ddbe0d'],
+  'balloon-popper': ['#1897be', '#000000'],
   'match-game': ['#7c3aed', '#06b6d4'],
+  'pizza-time': ['#46250f', '#d46906'],
+  'snake-escape': ['#d48336', '#0e5228'],
 };
 
 function GameCard({ game }: { game: GameWithRank }) {
   const [from, to] = GAME_GRADIENTS[game.slug] ?? ['#7c3aed', '#06b6d4'];
+  const icon = game.emoji ?? '🎮';
   return (
     <div className={styles.card}>
       <div
         className={styles.thumbnail}
         style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
       >
-        <span className={styles.emoji}>{game.emoji ?? '🎮'}</span>
+        <span className={styles.emoji}>{icon}</span>
         {game.user_rank != null && game.user_rank <= 3 && (
           <span className={styles.rankBadge}>
-            {game.user_rank === 1 ? '🥇' : game.user_rank === 2 ? '🥈' : '🥉'}
+            <MedalIcon
+              size={14}
+              weight='fill'
+              color={MEDAL_COLORS[game.user_rank]}
+            />
+            #{game.user_rank}
           </span>
         )}
       </div>

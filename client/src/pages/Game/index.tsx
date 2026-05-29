@@ -20,7 +20,8 @@ const GAME_COMPONENTS: Record<
   'balloon-popper': lazy(() => import('../../games/BalloonPopper')),
   'match-game': lazy(() => import('../../games/MatchGame')),
   'dots-boxes': lazy(() => import('../../games/DotsBoxes')),
-  'arrow-escape': lazy(() => import('../../games/ArrowEscape')),
+  'pizza-time': lazy(() => import('../../games/PizzaTime')),
+  'snake-escape': lazy(() => import('../../games/SnakeEscape')),
 };
 
 export default function Game() {
@@ -29,7 +30,7 @@ export default function Game() {
 
   const [game, setGame] = useState<Game | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [currentScore, setCurrentScore] = useState(0);
+  const [_currentScore, setCurrentScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
@@ -70,6 +71,9 @@ export default function Game() {
   }
 
   const GameComponent = slug ? GAME_COMPONENTS[slug] : undefined;
+  const myBest = user
+    ? (leaderboard.find((e) => e.user_id === user.id)?.best_score ?? null)
+    : null;
 
   if (!game) return <div className={styles.loading}>Loading...</div>;
 
@@ -80,9 +84,9 @@ export default function Game() {
         <div className={styles.gameHeader}>
           <h1 className={styles.gameTitle}>{game.title}</h1>
           <div className={styles.scoreDisplay}>
-            <span className={styles.scoreLabel}>Score</span>
+            <span className={styles.scoreLabel}>Your Best</span>
             <span className={styles.scoreValue}>
-              {currentScore.toLocaleString()}
+              {myBest != null ? myBest.toLocaleString() : '—'}
             </span>
           </div>
         </div>

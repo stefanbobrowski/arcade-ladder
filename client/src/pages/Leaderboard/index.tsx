@@ -1,16 +1,26 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
-import type { Game, LeaderboardEntry } from '../../types';
+import type { Game, LeaderboardEntry, OverallEntry } from '../../types';
 import Avatar from '../../components/ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
+import { MedalIcon } from '@phosphor-icons/react';
 import styles from './Leaderboard.module.scss';
 
-export default function Leaderboard() {
+const OVERALL = '__overall__';
+
+const MEDAL_COLORS: Record<number, string> = {
+  1: '#f59e0b',
+  2: '#a8bccf',
+  3: '#c07030',
+};
+
+export default function Ladder() {
   const { user } = useAuth();
   const [games, setGames] = useState<Game[]>([]);
-  const [selectedSlug, setSelectedSlug] = useState('');
+  const [selectedSlug, setSelectedSlug] = useState(OVERALL);
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [overallEntries, setOverallEntries] = useState<OverallEntry[]>([]);
   const [myEntry, setMyEntry] = useState<{
     rank: number;
     best_score: number;
@@ -18,14 +28,17 @@ export default function Leaderboard() {
   } | null>(null);
 
   useEffect(() => {
-    api.get<Game[]>('/games').then((r) => {
-      setGames(r.data);
-      if (r.data[0]) setSelectedSlug(r.data[0].slug);
-    });
+    api.get<Game[]>('/games').then((r) => setGames(r.data));
   }, []);
 
   useEffect(() => {
     if (!selectedSlug) return;
+    if (selectedSlug === OVERALL) {
+      api
+        .get<OverallEntry[]>('/leaderboard/top')
+        .then((r) => setOverallEntries(r.data));
+      return;
+    }
     api
       .get<LeaderboardEntry[]>(`/games/${selectedSlug}/leaderboard`)
       .then((r) => setEntries(r.data));
@@ -37,14 +50,21 @@ export default function Leaderboard() {
     }
   }, [selectedSlug, user]);
 
+  const isOverall = selectedSlug === OVERALL;
   const isInTop50 = user && entries.some((e) => e.user_id === user.id);
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.heading}>Leaderboard</h1>
+      <h1 className={styles.heading}>Ladder</h1>
 
-      {/* Game selector tabs */}
+      {/* Tabs */}
       <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${isOverall ? styles.activeTab : ''}`}
+          onClick={() => setSelectedSlug(OVERALL)}
+        >
+          🏆 Total Score
+        </button>
         {games.map((g) => (
           <button
             key={g.slug}
@@ -63,45 +83,79 @@ export default function Leaderboard() {
             <tr>
               <th>Rank</th>
               <th>Player</th>
-              <th>Best Score</th>
-              <th>Plays</th>
+              {isOverall ? (
+                <th>Total Score</th>
+              ) : (
+                <>
+                  <th>Best Score</th>
+                  <th>Plays</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
-            {entries.map((entry) => (
-              <tr
-                key={entry.user_id}
-                className={user?.id === entry.user_id ? styles.myRow : ''}
-              >
-                <td>{rankDisplay(entry.rank)}</td>
-                <td>
-                  <div className={styles.playerCell}>
-                    <Avatar
-                      user={{
-                        avatar_url: entry.avatar_url,
-                        chosen_avatar: entry.chosen_avatar,
-                        username: entry.username,
-                      }}
-                      size={28}
-                    />
-                    <Link
-                      to={`/profile/${entry.username}`}
-                      className={styles.usernameLink}
-                    >
-                      {entry.username}
-                    </Link>
-                  </div>
-                </td>
-                <td>{entry.best_score.toLocaleString()}</td>
-                <td>{entry.play_count}</td>
-              </tr>
-            ))}
+            {isOverall
+              ? overallEntries.map((entry) => (
+                  <tr
+                    key={entry.user_id}
+                    className={user?.id === entry.user_id ? styles.myRow : ''}
+                  >
+                    <td>{rankDisplay(entry.rank)}</td>
+                    <td>
+                      <div className={styles.playerCell}>
+                        <Avatar
+                          user={{
+                            avatar_url: entry.avatar_url,
+                            chosen_avatar: entry.chosen_avatar,
+                            username: entry.username,
+                          }}
+                          size={28}
+                        />
+                        <Link
+                          to={`/profile/${entry.username}`}
+                          className={styles.usernameLink}
+                        >
+                          {entry.username}
+                        </Link>
+                      </div>
+                    </td>
+                    <td>{Number(entry.total_score).toLocaleString()}</td>
+                  </tr>
+                ))
+              : entries.map((entry) => (
+                  <tr
+                    key={entry.user_id}
+                    className={user?.id === entry.user_id ? styles.myRow : ''}
+                  >
+                    <td>{rankDisplay(entry.rank)}</td>
+                    <td>
+                      <div className={styles.playerCell}>
+                        <Avatar
+                          user={{
+                            avatar_url: entry.avatar_url,
+                            chosen_avatar: entry.chosen_avatar,
+                            username: entry.username,
+                          }}
+                          size={28}
+                        />
+                        <Link
+                          to={`/profile/${entry.username}`}
+                          className={styles.usernameLink}
+                        >
+                          {entry.username}
+                        </Link>
+                      </div>
+                    </td>
+                    <td>{entry.best_score.toLocaleString()}</td>
+                    <td>{entry.play_count}</td>
+                  </tr>
+                ))}
           </tbody>
         </table>
       </div>
 
-      {/* Pinned user row if outside top 50 */}
-      {user && myEntry && !isInTop50 && (
+      {/* Pinned row when user is outside top 50 on a game leaderboard */}
+      {!isOverall && user && myEntry && !isInTop50 && (
         <div className={styles.myPosition}>
           You are ranked <strong>#{myEntry.rank}</strong> out of{' '}
           <strong>{myEntry.total_players}</strong> players
@@ -112,8 +166,12 @@ export default function Leaderboard() {
 }
 
 function rankDisplay(rank: number) {
-  if (rank === 1) return '🥇';
-  if (rank === 2) return '🥈';
-  if (rank === 3) return '🥉';
-  return `#${rank}`;
+  if (rank <= 3)
+    return (
+      <span className={styles.medalCell}>
+        <MedalIcon size={18} weight='fill' color={MEDAL_COLORS[rank]} />
+        <span>#{rank}</span>
+      </span>
+    );
+  return <span>#{rank}</span>;
 }

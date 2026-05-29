@@ -16,9 +16,9 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path='/' element={<Home />} />
-            <Route path='/games' element={<Games />} />
+            <Route path='/arcade' element={<Games />} />
             <Route path='/games/:slug' element={<Game />} />
-            <Route path='/leaderboard' element={<Leaderboard />} />
+            <Route path='/ladder' element={<Leaderboard />} />
             <Route path='/profile/:username' element={<Profile />} />
             <Route path='/about' element={<About />} />
             <Route path='*' element={<NotFound />} />

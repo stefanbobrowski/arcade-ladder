@@ -51,6 +51,7 @@ export interface SiteStats {
   total_players: number;
   total_plays: number;
   games_available: number;
+  active_today: number;
 }
 
 export interface UserRanking {

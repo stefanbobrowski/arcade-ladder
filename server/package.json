@@ -8,8 +8,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "db:migrate": "docker exec -i arcade-pg psql -U postgres -d arcade_ladder < src/db/migrations/001_init.sql",
-    "db:reset": "docker exec -i arcade-pg psql -U postgres -d arcade_ladder -c \"TRUNCATE scores, users RESTART IDENTITY CASCADE;\"",
-    "db:reseed": "docker exec -i arcade-pg psql -U postgres -d arcade_ladder -c \"DELETE FROM games; INSERT INTO games (slug, title, description, emoji) VALUES ('typing-speed','Typing Speed','Type words as fast and accurately as you can.','⌨️'),('reaction-grid','Reaction Grid','Click the highlighted tile before it moves.','⚡'),('pattern-memory','Pattern Memory','Watch the sequence, then repeat it.','🧠'),('quick-math','Quick Math','Answer arithmetic questions under time pressure.','🔢'),('color-sort','Color Sort','Sort falling items into the correct color bins.','🎨'),('balloon-popper','Balloon Popper','Pop balloons before they float away.','🎈') ON CONFLICT (slug) DO NOTHING;\""
+    "db:sync-games": "docker exec -i arcade-pg psql -U postgres -d arcade_ladder < src/db/migrations/sync-games.sql",
+    "db:reset": "docker exec -i arcade-pg psql -U postgres -d arcade_ladder -c \"TRUNCATE scores, users RESTART IDENTITY CASCADE;\""
   },
   "keywords": [],
   "author": "",

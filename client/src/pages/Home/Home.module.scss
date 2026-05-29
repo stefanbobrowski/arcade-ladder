@@ -17,158 +17,218 @@
 .subheading {
   text-align: center;
   color: rgba(255, 255, 255, 0.5);
-  margin: 0 0 2rem;
+  margin: 0 0 2.5rem;
 }
 
 .podiumSection {
   text-align: center;
+  position: relative;
 }
 
 .podium {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  gap: 1rem;
-  margin: 1rem auto;
+  gap: 1.5rem;
+  margin: 6rem auto 1rem;
 }
 
+// Outer wrapper — handles elevation, overflow visible so crown shows above card
+.podiumOuter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+// Crown floats above the card, not clipped by overflow:hidden on the card
+.podiumCrown {
+  position: absolute;
+  bottom: calc(100%);
+  z-index: 2;
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.9))
+    drop-shadow(0 0 20px rgba(245, 158, 11, 0.5));
+  pointer-events: none;
+}
+
+// The actual clickable card
 .podiumCard {
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 1.5rem 2rem;
+  gap: 0.25rem;
+  padding: 4rem 1rem;
+  border-right: 100px solid red;
   border-radius: 16px;
-  width: 200px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease;
 }
 
+// Shimmer sweep on hover
 .podiumCard::before {
   content: '';
   position: absolute;
   top: 0;
-  left: -75%;
+  left: -78%;
   width: 50%;
   height: 100%;
   background: linear-gradient(
     120deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.22) 50%,
     transparent 100%
   );
   transform: skewX(-20deg);
   transition: left 0.5s ease;
   pointer-events: none;
 }
-
 .podiumCard:hover::before {
   left: 140%;
 }
 
-.podiumCard > * {
-  letter-spacing: 0.5px;
-  text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000;
-  /* -webkit-text-stroke: 1px rgba(0, 0, 0, 1); */
-}
-
+// Rank elevations — on the outer wrapper
 .rank1 {
-  background: linear-gradient(
-    160deg,
-    #7c5a0a 0%,
-    #c9920a 30%,
-    #f5d060 55%,
-    #c9920a 75%,
-    #7c5a0a 100%
-  );
-  border: 2px solid #f0c040;
-  box-shadow:
-    0 0 18px rgba(245, 200, 60, 0.45),
-    inset 0 1px 0 rgba(255, 255, 200, 0.3);
-  min-width: 180px;
-}
+  transform: translateY(-44px);
+  z-index: 3;
+  &:hover {
+    transform: translateY(-50px);
+  }
 
-.rank1:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 0 30px rgba(245, 200, 60, 0.65),
-    inset 0 1px 0 rgba(255, 255, 200, 0.4);
+  .podiumCard {
+    width: 200px;
+    background: linear-gradient(
+      160deg,
+      #7c5a0a 0%,
+      #c9920a 30%,
+      #f5d060 55%,
+      #c9920a 75%,
+      #7c5a0a 100%
+    );
+    border: 2px solid #f0c040;
+    box-shadow:
+      0 8px 32px rgba(245, 200, 60, 0.55),
+      0 2px 8px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 200, 0.3);
+    &:hover {
+      box-shadow:
+        0 12px 40px rgba(245, 200, 60, 0.75),
+        0 4px 12px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 200, 0.4);
+    }
+  }
 }
 
 .rank2 {
-  background: linear-gradient(
-    160deg,
-    #3a3f4a 0%,
-    #7a8899 30%,
-    #c8d4e0 55%,
-    #7a8899 75%,
-    #3a3f4a 100%
-  );
-  border: 2px solid #a8bccf;
-  box-shadow:
-    0 0 14px rgba(160, 185, 210, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transform: translateY(20px);
-}
+  transform: translateY(-10px);
+  z-index: 2;
+  &:hover {
+    transform: translateY(-15px);
+  }
 
-.rank2:hover {
-  transform: translateY(16px);
-  box-shadow:
-    0 0 24px rgba(160, 185, 210, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  .podiumCard {
+    width: 175px;
+    background: linear-gradient(
+      160deg,
+      #3a3f4a 0%,
+      #7a8899 30%,
+      #c8d4e0 55%,
+      #7a8899 75%,
+      #3a3f4a 100%
+    );
+    border: 2px solid #a8bccf;
+    box-shadow:
+      0 6px 24px rgba(160, 185, 210, 0.4),
+      0 2px 8px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    &:hover {
+      box-shadow:
+        0 10px 32px rgba(160, 185, 210, 0.6),
+        0 4px 12px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+  }
 }
 
 .rank3 {
-  background: linear-gradient(
-    160deg,
-    #4a2800 0%,
-    #8b4a0a 30%,
-    #d4813a 55%,
-    #8b4a0a 75%,
-    #4a2800 100%
-  );
-  border: 2px solid #c07030;
-  box-shadow:
-    0 0 14px rgba(180, 100, 30, 0.4),
-    inset 0 1px 0 rgba(255, 200, 120, 0.2);
-  transform: translateY(40px);
+  transform: translateY(10px);
+  z-index: 1;
+  &:hover {
+    transform: translateY(5px);
+  }
+
+  .podiumCard {
+    width: 165px;
+    background: linear-gradient(
+      160deg,
+      #4a2800 0%,
+      #8b4a0a 30%,
+      #d4813a 55%,
+      #8b4a0a 75%,
+      #4a2800 100%
+    );
+    border: 2px solid #c07030;
+    box-shadow:
+      0 6px 20px rgba(180, 100, 30, 0.45),
+      0 2px 8px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 200, 120, 0.2);
+    &:hover {
+      box-shadow:
+        0 10px 28px rgba(180, 100, 30, 0.65),
+        0 4px 12px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 200, 120, 0.35);
+    }
+  }
 }
 
-.rank3:hover {
-  transform: translateY(36px);
-  box-shadow:
-    0 0 24px rgba(180, 100, 30, 0.6),
-    inset 0 1px 0 rgba(255, 200, 120, 0.35);
-}
-
-.podiumRank {
-  font-size: 2rem;
-  font-weight: 800;
+.podiumRankNum {
+  font-family: 'Russo One', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
   line-height: 1;
+  margin-bottom: 0.25rem;
 }
 
 .podiumName {
-  font-weight: 600;
-  font-size: 1rem;
+  font-family: 'Russo One', sans-serif;
+  font-weight: 400;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-align: center;
+  word-break: break-word;
+  // Arcade gradient text — readable on any metallic background
+  background: linear-gradient(90deg, #7c3aed, #06b6d4, #f472b6);
+  background-opacity: 0.5;
+  color: rgba(0, 0, 0, 0.65);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  -webkit-background-clip: text;
+  // -webkit-text-fill-color: transparent;
+  // filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.4));
 }
+
 .podiumScore {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.8);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.65);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
+
 .podiumMedal {
-  font-size: 1.5rem;
+  display: flex;
+  justify-content: center;
+  margin: 0.1rem 0;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
 }
 
 .stats {
@@ -264,4 +324,136 @@
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.35);
   white-space: nowrap;
+}
+
+// ── Floating PS shapes around the podium ─────────────────────────────────────────
+
+.homeShape {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  line-height: 0;
+}
+
+// Top-left — Triangle (green)
+.homeShapeTL {
+  top: 8%;
+  left: 2%;
+  color: rgba(34, 197, 94, 0.18);
+  filter: drop-shadow(0 0 28px rgba(34, 197, 94, 0.35));
+  animation: homeBounce 6s ease-in-out infinite;
+}
+
+// Bottom-left — Circle (orange)
+.homeShapeBL {
+  top: 52%;
+  left: 4%;
+  color: rgba(249, 115, 22, 0.16);
+  filter: drop-shadow(0 0 28px rgba(249, 115, 22, 0.3));
+  animation: homePulse 7.5s ease-in-out infinite;
+  animation-delay: -2.1s;
+}
+
+// Top-right — Square (pink)
+.homeShapeTR {
+  top: 8%;
+  right: 2%;
+  color: rgba(232, 121, 249, 0.18);
+  filter: drop-shadow(0 0 28px rgba(232, 121, 249, 0.35));
+  animation: homeTwist 5.5s ease-in-out infinite;
+  animation-delay: -1s;
+}
+
+// Bottom-right — X (cyan)
+.homeShapeBR {
+  top: 52%;
+  right: 4%;
+  color: rgba(6, 182, 212, 0.17);
+  filter: drop-shadow(0 0 28px rgba(6, 182, 212, 0.3));
+  animation: homeWhirl 5s ease-in-out infinite;
+  animation-delay: -3.5s;
+}
+
+// ── Home page keyframes (snappier arcade energy) ──────────────────────────────
+
+// Triangle — floaty bounce
+@keyframes homeBounce {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  18% {
+    transform: translateY(-20px) rotate(8deg) scale(1.08);
+  }
+  36% {
+    transform: translateY(-12px) rotate(-5deg) scale(0.94);
+  }
+  55% {
+    transform: translateY(-28px) rotate(12deg) scale(1.07);
+  }
+  74% {
+    transform: translateY(-8px) rotate(-3deg) scale(0.97);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+}
+
+// Circle — pop and drift
+@keyframes homePulse {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  22% {
+    transform: translate(8px, -18px) scale(1.12);
+  }
+  44% {
+    transform: translate(-5px, -10px) scale(0.9);
+  }
+  66% {
+    transform: translate(10px, -24px) scale(1.08);
+  }
+  84% {
+    transform: translate(-3px, -6px) scale(0.96);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+// Square — tilt spin
+@keyframes homeTwist {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  30% {
+    transform: translateY(-22px) rotate(60deg) scale(1.09);
+  }
+  58% {
+    transform: translateY(-14px) rotate(105deg) scale(0.92);
+  }
+  78% {
+    transform: translateY(-26px) rotate(150deg) scale(1.05);
+  }
+  100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+}
+
+// X — quick counter spin
+@keyframes homeWhirl {
+  0% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  20% {
+    transform: translateY(-16px) rotate(-70deg) scale(1.1);
+  }
+  45% {
+    transform: translateY(-28px) rotate(-190deg) scale(0.92);
+  }
+  70% {
+    transform: translateY(-18px) rotate(-300deg) scale(1.06);
+  }
+  100% {
+    transform: translateY(0px) rotate(-360deg) scale(1);
+  }
 }

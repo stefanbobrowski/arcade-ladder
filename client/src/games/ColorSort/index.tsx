@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { GameProps } from '../../types';
 import styles from './ColorSort.module.scss';
 
-const GAME_DURATION = 90;
+const GAME_DURATION = 60;
 const TUBE_SIZE = 4;
 
 const COLOR_PALETTE = [
@@ -209,6 +209,19 @@ export default function ColorSort({
     }
   }
 
+  function handleReshuffle() {
+    if (!isPlaying || levelUp) return;
+    const penalty = 20;
+    scoreRef.current = Math.max(0, scoreRef.current - penalty);
+    setScore(scoreRef.current);
+    onScoreUpdate(scoreRef.current);
+    const [numColors, emptyTubes] =
+      LEVEL_CONFIG[Math.min(level, LEVEL_CONFIG.length - 1)];
+    setTubes(generatePuzzle(numColors, emptyTubes));
+    setSelected(null);
+    setGridKey((k) => k + 1);
+  }
+
   const urgentTime = timeLeft <= 10;
   const gameClass = [styles.game, flash === 'good' ? styles.flashGood : null]
     .filter(Boolean)
@@ -263,6 +276,13 @@ export default function ColorSort({
       <p className={styles.hint}>
         Select a tube, then click a destination to pour
       </p>
+      <button
+        className={styles.reshuffleBtn}
+        onClick={handleReshuffle}
+        disabled={!isPlaying || levelUp}
+      >
+        ↺ Reshuffle (−20 pts)
+      </button>
     </div>
   );
 }

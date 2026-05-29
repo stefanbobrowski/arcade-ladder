@@ -1,0 +1,114 @@
+.game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 1rem 0;
+  gap: 1rem;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.8rem;
+}
+
+.instruction {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.scores {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.badge {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+
+  &[data-grade='perfect'] {
+    background: #16a34a;
+  }
+  &[data-grade='good'] {
+    background: #ca8a04;
+  }
+  &[data-grade='ok'] {
+    background: #ea580c;
+  }
+  &[data-grade='bad'] {
+    background: #dc2626;
+  }
+}
+
+.canvas {
+  max-width: 340px;
+  width: 90%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: crosshair;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.phaseLabel {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.timer {
+  font-size: 0.9rem;
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.p2Header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.p2Score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f0c840;
+}
+
+.p2Canvas {
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 500 / 420;
+  touch-action: none;
+  cursor: grab;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// border: 3px solid #333;
+// position: relative;
+// user-select: none;
+// touch-action: none; /* important for mobile pointermove */
+
+/* Canvas overlay used for tracing lines */
+#traceCanvas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* canvas should not block pointer input */
+}
