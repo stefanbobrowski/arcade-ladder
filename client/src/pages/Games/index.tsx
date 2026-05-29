@@ -50,12 +50,13 @@ export default function Games() {
 }
 
 const GAME_GRADIENTS: Record<string, [string, string]> = {
+  'balloon-popper': ['#1897be', '#000000'],
+  'dots-boxes': ['#278adb', '#cc2a6b'],
   'typing-speed': ['#0284c7', '#0e7490'],
   'reaction-grid': ['#6d28d9', '#4338ca'],
   'pattern-memory': ['#047857', '#0f766e'],
   'quick-math': ['#1d4ed8', '#5b21b6'],
-  'solution-color-sort': ['#1e11db', '#ddbe0d'],
-  'balloon-popper': ['#1897be', '#000000'],
+  'solution-color-sort': ['#db114e', '#0ddd4b'],
   'match-game': ['#7c3aed', '#06b6d4'],
   'pizza-time': ['#46250f', '#d46906'],
   'snake-escape': ['#d48336', '#0e5228'],

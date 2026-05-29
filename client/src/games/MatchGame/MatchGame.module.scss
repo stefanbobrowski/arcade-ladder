@@ -83,7 +83,7 @@
 
   &.matched {
     cursor: default;
-    opacity: 0.35;
+    opacity: 1;
     pointer-events: none;
   }
 }
@@ -114,9 +114,12 @@
 }
 
 .cardBack {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgb(21, 62, 75);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
   font-size: 1.6rem;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 
   &::after {
     content: '?';
@@ -126,7 +129,7 @@
   }
 
   .cardScene:hover:not(.matched) & {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgb(29, 104, 104);
     border-color: rgba(255, 255, 255, 0.2);
   }
 }
@@ -136,6 +139,9 @@
   border: 1.5px solid rgba(124, 58, 237, 0.5);
   font-size: 3rem;
   transform: rotateY(180deg);
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 // ── Animations ─────────────────────────────────────────────────────────────
