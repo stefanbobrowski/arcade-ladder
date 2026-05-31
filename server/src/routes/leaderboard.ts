@@ -1,8 +1,15 @@
 import { FastifyPluginAsync } from 'fastify';
+import { cache } from '../lib/cache';
+
+const TTL_60S = 60_000;
+const TTL_30S = 30_000;
 
 export const leaderboardRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /leaderboard/top — top 10 overall (for home page podium)
   fastify.get('/top', async () => {
+    const cached = cache.get<unknown[]>('leaderboard:top');
+    if (cached) return cached;
+
     const { rows } = await fastify.db.query(
       `SELECT
          RANK() OVER (ORDER BY SUM(best.best_score) DESC)::int AS rank,
@@ -17,11 +24,15 @@ export const leaderboardRoutes: FastifyPluginAsync = async (fastify) => {
        ORDER BY total_score DESC
        LIMIT 10`
     );
+    cache.set('leaderboard:top', rows, TTL_60S);
     return rows;
   });
 
   // GET /leaderboard/activity — recent events for live activity feed
   fastify.get('/activity', async () => {
+    const cached = cache.get<unknown[]>('leaderboard:activity');
+    if (cached) return cached;
+
     const { rows } = await fastify.db.query(
       `SELECT
          u.username, u.avatar_url, u.chosen_avatar,
@@ -43,11 +54,15 @@ export const leaderboardRoutes: FastifyPluginAsync = async (fastify) => {
        ORDER BY s.created_at DESC
        LIMIT 50`
     );
+    cache.set('leaderboard:activity', rows, TTL_30S);
     return rows;
   });
 
   // GET /leaderboard/stats — site-wide stat cards
   fastify.get('/stats', async () => {
+    const cached = cache.get<unknown>('leaderboard:stats');
+    if (cached) return cached;
+
     const { rows } = await fastify.db.query(
       `SELECT
          (SELECT COUNT(*) FROM users)::int AS total_players,
@@ -55,6 +70,7 @@ export const leaderboardRoutes: FastifyPluginAsync = async (fastify) => {
          (SELECT COUNT(*) FROM games WHERE is_active = TRUE)::int AS games_available,
          (SELECT COUNT(DISTINCT user_id) FROM scores WHERE created_at > NOW() - INTERVAL '24 hours')::int AS active_today`
     );
+    cache.set('leaderboard:stats', rows[0], TTL_30S);
     return rows[0];
   });
 };

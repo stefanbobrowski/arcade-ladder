@@ -1,5 +1,8 @@
 import { FastifyPluginAsync } from 'fastify';
 import { requireAuth } from '../plugins/auth';
+import { cache } from '../lib/cache';
+
+const TTL_60S = 60_000;
 
 export const scoreRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /games/:slug/scores — submit a score
@@ -50,6 +53,12 @@ export const scoreRoutes: FastifyPluginAsync = async (fastify) => {
         [gameId, payload.sub]
       );
 
+      // Bust leaderboard caches so next read is fresh
+      cache.delete('leaderboard:top');
+      cache.delete('leaderboard:activity');
+      cache.delete('leaderboard:stats');
+      cache.delete(`leaderboard:game:${slug}`);
+
       return {
         success: true,
         rank: rankRows[0]?.rank ?? null,
@@ -61,6 +70,11 @@ export const scoreRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /games/:slug/leaderboard — top 50
   fastify.get('/:slug/leaderboard', async (request, reply) => {
     const { slug } = request.params as { slug: string };
+
+    const cacheKey = `leaderboard:game:${slug}`;
+    const cached = cache.get<unknown[]>(cacheKey);
+    if (cached) return cached;
+
     const { rows: gameRows } = await fastify.db.query(
       'SELECT id FROM games WHERE slug = $1 AND is_active = TRUE',
       [slug]
@@ -81,6 +95,7 @@ export const scoreRoutes: FastifyPluginAsync = async (fastify) => {
        LIMIT 50`,
       [gameRows[0].id]
     );
+    cache.set(cacheKey, rows, TTL_60S);
     return rows;
   });
 
