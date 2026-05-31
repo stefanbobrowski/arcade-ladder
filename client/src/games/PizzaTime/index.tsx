@@ -147,19 +147,16 @@ function grade(score: number) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PHASE 2 — THROW THE SLICES
+// PHASE 2 — DRAG & DROP THE SLICES
 // ─────────────────────────────────────────────────────────────────────────────
 
 const P2_W = 500;
 const P2_H = 420;
-const COUNTER_Y = 295; // y of the counter top surface
+const COUNTER_Y = 295;
 const SLICE_R = 28;
 const MOUTH_R = 24;
-const GRAVITY = 0.32;
-const NUM_CUSTOMERS = 4;
-const PHASE2_TIME = 25; // seconds
+const NUM_CUSTOMERS = 8;
 
-// Slice colours (triangular wedge tones)
 const SLICE_COLORS = [
   '#f0c840',
   '#d4811a',
@@ -173,28 +170,23 @@ const SLICE_COLORS = [
 
 interface Customer {
   id: number;
-  x: number; // 0–1 normalised
+  x: number;
   bobOffset: number;
-  phase: number; // radians, for bobbing
-  speed: number; // bob speed
+  phase: number;
+  speed: number;
   isOpen: boolean;
-  openTimer: number;
+  fed: boolean; // has eaten — will exit scene
+  exitX: number; // x drift for exit animation (pixels per frame)
 }
 
 interface P2Slice {
   id: number;
   colorIdx: number;
-  // physics
   x: number;
   y: number;
-  vx: number;
-  vy: number;
   angle: number;
-  spin: number;
-  // dragging
   dragging: boolean;
-  // state
-  landed: boolean;
+  done: boolean; // scored OR fell to floor
   scored: boolean;
 }
 
@@ -215,7 +207,8 @@ function buildCustomers(count: number): Customer[] {
     phase: (i / count) * Math.PI * 2,
     speed: 0.8 + Math.random() * 0.5,
     isOpen: false,
-    openTimer: 0,
+    fed: false,
+    exitX: 0,
   }));
 }
 
@@ -225,13 +218,10 @@ function buildSlices(count: number): P2Slice[] {
     id: i,
     colorIdx: i % SLICE_COLORS.length,
     x: 60 + i * spacing,
-    y: COUNTER_Y - SLICE_R + 4, // resting on the counter
-    vx: 0,
-    vy: 0,
-    angle: -Math.PI / 2 + (i / count - 0.5) * 0.9, // slight fan
-    spin: 0,
+    y: COUNTER_Y - SLICE_R + 4,
+    angle: -Math.PI / 2 + (i / count - 0.5) * 0.9,
     dragging: false,
-    landed: true, // starts resting — gravity only kicks in after you pick it up
+    done: false,
     scored: false,
   }));
 }
@@ -274,8 +264,9 @@ function drawCustomer(
   bobY: number,
   _canvasH: number
 ) {
-  const x = c.x * P2_W;
-  const headY = 72 + bobY; // head centre near top of canvas
+  if (c.fed && Math.abs(c.exitX) > P2_W) return; // fully off screen
+  const x = c.x * P2_W + c.exitX;
+  const headY = 72 + bobY;
 
   // Body / torso (seated behind counter, only upper body visible)
   ctx.beginPath();
@@ -398,11 +389,6 @@ export default function PizzaTime({
     dragId: number | null;
     dragOffX: number;
     dragOffY: number;
-    pickupX: number;
-    pickupY: number;
-    throwStart: { x: number; y: number; t: number } | null;
-    pointerHistory: Array<{ x: number; y: number; t: number }>;
-    timeLeft: number;
     totalScore: number;
     popups: FeedbackPopup[];
     popupId: number;
@@ -412,7 +398,6 @@ export default function PizzaTime({
 
   const p2ScoreRef = useRef(0);
   const endedRef = useRef(false);
-  const [p2TimeLeft, setP2TimeLeft] = useState(PHASE2_TIME);
   const [p2Score, setP2Score] = useState(0);
   const [phase1Score, setPhase1Score] = useState(0);
 
@@ -423,7 +408,6 @@ export default function PizzaTime({
     p2ScoreRef.current = 0;
     setP2Score(0);
     setPhase1Score(0);
-    setP2TimeLeft(PHASE2_TIME);
     endedRef.current = false;
     const ctx = p1CanvasRef.current?.getContext('2d');
     if (ctx) drawPizza(ctx, []);
@@ -497,8 +481,7 @@ export default function PizzaTime({
   // ── Phase 2 launch ──
   function startPhase2(p1Total: number) {
     setPhase('throwing');
-    const slices = buildSlices(8);
-    // buildSlices positions them evenly along the counter
+    const slices = buildSlices(NUM_CUSTOMERS);
     const customers = buildCustomers(NUM_CUSTOMERS);
     p2StateRef.current = {
       slices,
@@ -506,11 +489,6 @@ export default function PizzaTime({
       dragId: null,
       dragOffX: 0,
       dragOffY: 0,
-      pickupX: 0,
-      pickupY: 0,
-      throwStart: null,
-      pointerHistory: [],
-      timeLeft: PHASE2_TIME,
       totalScore: p1Total,
       popups: [],
       popupId: 0,
@@ -518,7 +496,6 @@ export default function PizzaTime({
       rafId: null,
     };
     p2ScoreRef.current = 0;
-    setP2TimeLeft(PHASE2_TIME);
     setP2Score(0);
     scheduleCustomerOpens();
     runP2Loop();
@@ -532,129 +509,64 @@ export default function PizzaTime({
     p2StateRef.current = null;
   }
 
-  // Randomly schedule customers opening their mouths
   function scheduleCustomerOpens() {
     const s = p2StateRef.current;
     if (!s) return;
-    // Start alternating customers open immediately
-    s.customers[0].isOpen = true;
-    s.customers[2].isOpen = true;
     const ids: number[] = [];
+
     function scheduleOne(cIdx: number, delay: number) {
       const id = window.setTimeout(() => {
         const st = p2StateRef.current;
-        if (!st) return;
+        if (!st || st.customers[cIdx].fed) return;
         st.customers[cIdx].isOpen = true;
-        st.customers[cIdx].openTimer = window.setTimeout(
+        window.setTimeout(
           () => {
             const st2 = p2StateRef.current;
-            if (!st2) return;
+            if (!st2 || st2.customers[cIdx].fed) return;
             st2.customers[cIdx].isOpen = false;
-            // Closed for 0.8-1.8s, then open again
             scheduleOne(cIdx, 800 + Math.random() * 1000);
           },
-          // Stay open 2.5-4 seconds
           2500 + Math.random() * 1500
         );
       }, delay);
       ids.push(id);
     }
-    // Stagger initial open so not all close at same time
-    for (let i = 0; i < NUM_CUSTOMERS; i++)
-      scheduleOne(
-        i,
-        i % 2 === 0
-          ? 2500 + Math.random() * 500
-          : 400 + i * 200 + Math.random() * 300
-      );
+
+    for (let i = 0; i < NUM_CUSTOMERS; i++) {
+      scheduleOne(i, i * 180 + Math.random() * 250);
+    }
     s.openTimers = ids;
   }
-
-  let lastTimestamp = 0;
 
   function runP2Loop() {
     const s = p2StateRef.current;
     if (!s) return;
 
-    const step = (ts: number) => {
+    const step = () => {
       const st = p2StateRef.current;
       if (!st) return;
-      const dt = lastTimestamp ? Math.min((ts - lastTimestamp) / 16.67, 3) : 1;
-      lastTimestamp = ts;
 
-      // Countdown
-      st.timeLeft -= dt * (1 / 60);
-      const tl = Math.max(0, Math.ceil(st.timeLeft));
-      setP2TimeLeft(tl);
-
-      // Bob customers
+      // Bob customers, advance exit animations
       for (const c of st.customers) {
-        c.phase += 0.025 * c.speed * dt;
+        c.phase += 0.025 * c.speed;
         c.bobOffset = Math.sin(c.phase) * 5;
-      }
-
-      // Physics for in-flight slices
-      for (const sl of st.slices) {
-        if (sl.dragging || sl.landed) continue;
-        sl.vy += GRAVITY * dt;
-        sl.x += sl.vx * dt;
-        sl.y += sl.vy * dt;
-        sl.angle += sl.spin * dt;
-
-        // Check mouth hits
-        if (!sl.scored) {
-          for (const c of st.customers) {
-            if (!c.isOpen) continue;
-            const mouthX = c.x * P2_W;
-            const mouthY = 72 + c.bobOffset + 9; // mouth centre (top-of-canvas customers)
-            const dist = Math.hypot(sl.x - mouthX, sl.y - mouthY);
-            if (dist < MOUTH_R + SLICE_R * 0.5) {
-              sl.scored = true;
-              sl.landed = true;
-              sl.vx = 0;
-              sl.vy = 0;
-              sl.x = mouthX;
-              sl.y = mouthY;
-              c.isOpen = false;
-              // Score based on aim accuracy (dist from mouth center)
-              const pts = Math.max(10, Math.round(100 - dist * 2));
-              st.totalScore += pts;
-              p2ScoreRef.current += pts;
-              setP2Score((v) => v + pts);
-              onScoreUpdate(st.totalScore);
-              // Popup
-              st.popups.push({
-                id: st.popupId++,
-                x: mouthX,
-                y: mouthY - 30,
-                text: `+${pts}`,
-                color:
-                  pts >= 80 ? '#22c55e' : pts >= 50 ? '#f59e0b' : '#ef4444',
-                life: 1,
-              });
-            }
-          }
-        }
-
-        // Fell off screen
-        if (
-          sl.y > P2_H + SLICE_R ||
-          sl.x < -SLICE_R * 2 ||
-          sl.x > P2_W + SLICE_R * 2
-        ) {
-          sl.landed = true;
+        if (c.fed) {
+          // exitX is set to +/-0.001 as direction sentinel, then accumulates
+          const dir = c.exitX >= 0 ? 1 : -1;
+          c.exitX += dir * 8;
         }
       }
 
       // Age popups
       st.popups = st.popups.filter((p) => {
-        p.life -= 0.04 * dt;
+        p.life -= 0.04;
         return p.life > 0;
       });
 
       drawP2(st);
 
-      if (st.timeLeft <= 0 && !endedRef.current) {
+      // End when all slices are done
+      if (!endedRef.current && st.slices.every((sl) => sl.done)) {
         endedRef.current = true;
         setPhase('done');
         onGameOver(st.totalScore);
@@ -675,14 +587,12 @@ export default function PizzaTime({
 
     ctx.clearRect(0, 0, P2_W, P2_H);
 
-    // ── Background: restaurant customer side (top) ──
+    // Background: customer side
     const wallGrad = ctx.createLinearGradient(0, 0, 0, COUNTER_Y - 16);
     wallGrad.addColorStop(0, '#1e1b4b');
     wallGrad.addColorStop(1, '#312e81');
     ctx.fillStyle = wallGrad;
     ctx.fillRect(0, 0, P2_W, COUNTER_Y - 16);
-
-    // Subtle wall pattern
     ctx.strokeStyle = 'rgba(255,255,255,0.04)';
     ctx.lineWidth = 1;
     for (let wx = 0; wx < P2_W; wx += 60) {
@@ -692,7 +602,7 @@ export default function PizzaTime({
       ctx.stroke();
     }
 
-    // ── Counter surface ──
+    // Counter surface
     const ctrGrad = ctx.createLinearGradient(
       0,
       COUNTER_Y - 16,
@@ -704,77 +614,34 @@ export default function PizzaTime({
     ctrGrad.addColorStop(1, '#78350f');
     ctx.fillStyle = ctrGrad;
     ctx.fillRect(0, COUNTER_Y - 16, P2_W, 40);
-    // Highlight strip on top edge
     ctx.fillStyle = 'rgba(255,210,120,0.3)';
     ctx.fillRect(0, COUNTER_Y - 16, P2_W, 4);
-    // Shadow under counter
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.fillRect(0, COUNTER_Y + 24, P2_W, 10);
 
-    // ── Background: kitchen / server side (bottom) ──
+    // Kitchen background
     const kitchenGrad = ctx.createLinearGradient(0, COUNTER_Y + 34, 0, P2_H);
     kitchenGrad.addColorStop(0, '#292524');
     kitchenGrad.addColorStop(1, '#1c1917');
     ctx.fillStyle = kitchenGrad;
     ctx.fillRect(0, COUNTER_Y + 34, P2_W, P2_H - COUNTER_Y - 34);
 
-    // ── Customers (behind counter at the top) ──
+    // Customers
     for (const c of s.customers) drawCustomer(ctx, c, c.bobOffset, P2_H);
 
-    // ── Slices (on counter or in flight) ──
+    // Slices on counter (not done, not dragging)
     for (const sl of s.slices) {
-      if (sl.scored) continue;
-      drawSlice(ctx, sl.x, sl.y, sl.angle, sl.colorIdx, sl.dragging ? 0.7 : 1);
+      if (sl.done || sl.dragging) continue;
+      drawSlice(ctx, sl.x, sl.y, sl.angle, sl.colorIdx, 1);
     }
 
-    // ── Trajectory arc preview while dragging ──
+    // Dragged slice on top
     if (s.dragId !== null) {
       const sl = s.slices.find((x) => x.id === s.dragId);
-      if (sl) {
-        // Estimate throw velocity from recent history
-        let pvx = 0,
-          pvy = 0;
-        const hist = s.pointerHistory;
-        if (hist.length >= 2) {
-          const oldest = hist[0];
-          const newest = hist[hist.length - 1];
-          const dtMs = Math.max(8, newest.t - oldest.t);
-          pvx = ((newest.x - oldest.x) / dtMs) * (1000 / 60);
-          pvy = ((newest.y - oldest.y) / dtMs) * (1000 / 60);
-        } else if (s.pickupX !== undefined) {
-          const dx = sl.x - s.pickupX;
-          const dy = sl.y - s.pickupY;
-          const d = Math.hypot(dx, dy);
-          if (d > 15) {
-            pvx = (dx / d) * 12;
-            pvy = (dy / d) * 12;
-          }
-        }
-        // Clamp
-        const ps = Math.hypot(pvx, pvy);
-        if (ps > 22) {
-          pvx = (pvx / ps) * 22;
-          pvy = (pvy / ps) * 22;
-        }
-        // Draw dotted arc in direction of throw
-        if (ps > 2) {
-          ctx.save();
-          for (let t = 3; t <= 28; t += 3) {
-            const tx = sl.x + pvx * t;
-            const ty = sl.y + pvy * t + 0.5 * GRAVITY * t * t;
-            if (ty < -10 || tx < -20 || tx > P2_W + 20) break;
-            ctx.globalAlpha = (1 - t / 32) * 0.85;
-            ctx.fillStyle = '#fff9c4';
-            ctx.beginPath();
-            ctx.arc(tx, ty, 3.5 - t * 0.08, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          ctx.restore();
-        }
-      }
+      if (sl) drawSlice(ctx, sl.x, sl.y, sl.angle, sl.colorIdx, 0.85);
     }
 
-    // ── Score popups ──
+    // Popups
     for (const p of s.popups) {
       ctx.save();
       ctx.globalAlpha = p.life;
@@ -786,7 +653,7 @@ export default function PizzaTime({
     }
   }
 
-  // ── Phase 2 pointer handlers ──
+  // ── Phase 2 pointer handlers (drag & drop) ──
   function p2Pos(e: React.PointerEvent<HTMLCanvasElement>): {
     x: number;
     y: number;
@@ -803,19 +670,12 @@ export default function PizzaTime({
     if (!s || phaseRef.current !== 'throwing') return;
     const { x, y } = p2Pos(e);
     for (const sl of s.slices) {
-      if (sl.scored || sl.dragging) continue;
+      if (sl.done || sl.dragging) continue;
       if (Math.hypot(sl.x - x, sl.y - y) < SLICE_R + 14) {
         sl.dragging = true;
-        sl.vx = 0;
-        sl.vy = 0;
-        sl.landed = false; // lift off the counter
         s.dragId = sl.id;
         s.dragOffX = sl.x - x;
         s.dragOffY = sl.y - y;
-        s.pickupX = sl.x;
-        s.pickupY = sl.y;
-        s.throwStart = { x, y, t: e.timeStamp };
-        s.pointerHistory = [{ x, y, t: e.timeStamp }];
         p2CanvasRef.current?.setPointerCapture(e.pointerId);
         break;
       }
@@ -826,91 +686,69 @@ export default function PizzaTime({
     const s = p2StateRef.current;
     if (!s || s.dragId === null) return;
     const { x, y } = p2Pos(e);
-    const sl = s.slices.find((x2) => x2.id === s.dragId);
+    const sl = s.slices.find((s2) => s2.id === s.dragId);
     if (!sl) return;
     sl.x = x + s.dragOffX;
     sl.y = y + s.dragOffY;
-    // Track recent pointer positions for flick velocity
-    const now = e.timeStamp;
-    s.pointerHistory.push({ x, y, t: now });
-    // Keep only last 100ms
-    while (s.pointerHistory.length > 0 && now - s.pointerHistory[0].t > 100) {
-      s.pointerHistory.shift();
-    }
   }
 
-  function onP2Up(e: React.PointerEvent<HTMLCanvasElement>) {
+  function onP2Up(_e: React.PointerEvent<HTMLCanvasElement>) {
     const s = p2StateRef.current;
     if (!s || s.dragId === null) return;
-    // Update pointer history with the final position
-    const { x: _rx, y: _ry } = p2Pos(e);
-    void _rx;
-    void _ry;
-    const sl = s.slices.find((x2) => x2.id === s.dragId);
+    const sl = s.slices.find((s2) => s2.id === s.dragId);
     if (sl) {
       sl.dragging = false;
+      // Check if dropped into an open mouth
+      let fed = false;
+      for (const c of s.customers) {
+        if (!c.isOpen || c.fed) continue;
+        const mouthX = c.x * P2_W + c.exitX;
+        const mouthY = 72 + c.bobOffset + 9;
+        const dist = Math.hypot(sl.x - mouthX, sl.y - mouthY);
+        if (dist < MOUTH_R + SLICE_R) {
+          // Success!
+          sl.done = true;
+          sl.scored = true;
+          c.fed = true;
+          c.isOpen = false;
+          // Exit direction: left half exits left, right half exits right
+          c.exitX = c.x < 0.5 ? 0 : 0; // will accumulate in RAF loop
+          // pick exit direction based on position
+          const exitDir = c.x * P2_W < P2_W / 2 ? -1 : 1;
+          // store as a tiny hack: set exitX to a sentinel
+          c.exitX = exitDir * 0.001; // RAF loop checks sign
 
-      // ── Flick velocity from recent pointer movement ──
-      // Use the last 100ms of pointer history to measure actual hand speed
-      const hist = s.pointerHistory;
-      let velX = 0,
-        velY = 0;
-
-      if (hist.length >= 2) {
-        const oldest = hist[0];
-        const newest = hist[hist.length - 1];
-        const dtMs = Math.max(8, newest.t - oldest.t);
-        // Convert: pixels-per-ms → pixels-per-frame at 60fps
-        const msPerFrame = 1000 / 60;
-        velX = ((newest.x - oldest.x) / dtMs) * msPerFrame;
-        velY = ((newest.y - oldest.y) / dtMs) * msPerFrame;
-      } else {
-        // Single point or no history — use total displacement from pickup
-        const dx = sl.x - s.pickupX;
-        const dy = sl.y - s.pickupY;
-        const d = Math.hypot(dx, dy);
-        if (d > 15) {
-          const baseSpeed = 12;
-          velX = (dx / d) * baseSpeed;
-          velY = (dy / d) * baseSpeed;
+          const pts = Math.max(20, Math.round(120 - dist * 2));
+          s.totalScore += pts;
+          p2ScoreRef.current += pts;
+          setP2Score((v) => v + pts);
+          onScoreUpdate(s.totalScore);
+          s.popups.push({
+            id: s.popupId++,
+            x: mouthX,
+            y: mouthY - 30,
+            text: `+${pts} 😋`,
+            color: '#22c55e',
+            life: 1,
+          });
+          fed = true;
+          break;
         }
       }
-
-      // Clamp max speed
-      const speed = Math.hypot(velX, velY);
-      const MAX_SPEED = 22;
-      if (speed > MAX_SPEED) {
-        velX = (velX / speed) * MAX_SPEED;
-        velY = (velY / speed) * MAX_SPEED;
+      if (!fed) {
+        // Slice dropped on floor — count it as done
+        sl.done = true;
+        s.popups.push({
+          id: s.popupId++,
+          x: sl.x,
+          y: sl.y - 20,
+          text: '💨 floor',
+          color: '#ef4444',
+          life: 1,
+        });
       }
-
-      // If nearly stationary release and barely moved from pickup → snap back
-      if (Math.hypot(velX, velY) < 1.5) {
-        const moved = Math.hypot(sl.x - s.pickupX, sl.y - s.pickupY);
-        if (moved < 15) {
-          sl.x = s.pickupX;
-          sl.y = s.pickupY;
-          sl.dragging = false;
-          s.dragId = null;
-          s.throwStart = null;
-          s.pointerHistory = [];
-          return;
-        }
-        // They dragged far but released slow — use drag direction at low speed
-        const dx = sl.x - s.pickupX;
-        const dy = sl.y - s.pickupY;
-        const d = Math.hypot(dx, dy);
-        velX = (dx / d) * 8;
-        velY = (dy / d) * 8;
-      }
-
-      sl.vx = velX;
-      sl.vy = velY;
-      sl.spin = velX * 0.04;
     }
     s.dragId = null;
-    s.throwStart = null;
-    s.pointerHistory = [];
   }
 
   // ── JSX ──
@@ -953,10 +791,14 @@ export default function PizzaTime({
         <>
           <div className={styles.p2Header}>
             <span className={styles.p2Score}>🍕 {p2Score} pts</span>
-            <span className={styles.timer}>⏱ {p2TimeLeft}s</span>
+            <span className={styles.slicesLeft}>
+              {p2StateRef.current
+                ? `${p2StateRef.current.slices.filter((s) => !s.done).length} slices left`
+                : ''}
+            </span>
           </div>
           <p className={styles.instruction}>
-            Drag &amp; throw slices into open mouths!
+            Drag slices onto open mouths — all 8 must be served or dropped!
           </p>
           <canvas
             ref={p2CanvasRef}

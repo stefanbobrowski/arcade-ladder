@@ -60,9 +60,12 @@
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  padding: 4rem 1rem;
-  border-right: 100px solid red;
-  border-radius: 16px;
+  width: 240px;
+  padding: 3rem 1rem;
+  border-left: 2px solid #aaa;
+  border-right: 2px solid #aaa;
+  border-bottom: 64px solid #aaa;
+  border-radius: 10px;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
@@ -81,7 +84,7 @@
     120deg,
     transparent 0%,
     rgba(255, 255, 255, 0.22) 50%,
-    transparent 100%
+    transparent 50%
   );
   transform: skewX(-20deg);
   transition: left 0.5s ease;
@@ -100,7 +103,6 @@
   }
 
   .podiumCard {
-    width: 200px;
     background: linear-gradient(
       160deg,
       #7c5a0a 0%,
@@ -109,16 +111,16 @@
       #c9920a 75%,
       #7c5a0a 100%
     );
-    border: 2px solid #f0c040;
+    border-color: #524212;
     box-shadow:
-      0 8px 32px rgba(245, 200, 60, 0.55),
+      0 6px 20px rgba(180, 100, 30, 0.45),
       0 2px 8px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 200, 0.3);
+      inset 0 1px 0 rgba(255, 200, 120, 0.2);
     &:hover {
       box-shadow:
-        0 12px 40px rgba(245, 200, 60, 0.75),
-        0 4px 12px rgba(0, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 255, 200, 0.4);
+        0 10px 28px rgba(180, 100, 30, 0.65),
+        0 4px 12px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 200, 120, 0.35);
     }
   }
 }
@@ -131,7 +133,6 @@
   }
 
   .podiumCard {
-    width: 175px;
     background: linear-gradient(
       160deg,
       #3a3f4a 0%,
@@ -140,16 +141,16 @@
       #7a8899 75%,
       #3a3f4a 100%
     );
-    border: 2px solid #a8bccf;
+    border-color: #a88ccf;
     box-shadow:
-      0 6px 24px rgba(160, 185, 210, 0.4),
+      0 6px 20px rgba(180, 100, 30, 0.45),
       0 2px 8px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      inset 0 1px 0 rgba(255, 200, 120, 0.2);
     &:hover {
       box-shadow:
-        0 10px 32px rgba(160, 185, 210, 0.6),
+        0 10px 28px rgba(180, 100, 30, 0.65),
         0 4px 12px rgba(0, 0, 0, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        inset 0 1px 0 rgba(255, 200, 120, 0.35);
     }
   }
 }
@@ -162,7 +163,6 @@
   }
 
   .podiumCard {
-    width: 165px;
     background: linear-gradient(
       160deg,
       #4a2800 0%,
@@ -171,7 +171,8 @@
       #8b4a0a 75%,
       #4a2800 100%
     );
-    border: 2px solid #c07030;
+    // border: 2px solid #c07030;
+    border-color: #c07030;
     box-shadow:
       0 6px 20px rgba(180, 100, 30, 0.45),
       0 2px 8px rgba(0, 0, 0, 0.5),
@@ -340,8 +341,8 @@
   top: 8%;
   left: 2%;
   color: rgba(34, 197, 94, 0.18);
-  filter: drop-shadow(0 0 28px rgba(34, 197, 94, 0.35));
-  animation: homeBounce 6s ease-in-out infinite;
+  filter: drop-shadow(0 0 28px rgba(34, 197, 94, 0.3));
+  animation: homeTwist 6s ease-in-out infinite;
 }
 
 // Bottom-left — Circle (orange)
@@ -350,7 +351,7 @@
   left: 4%;
   color: rgba(249, 115, 22, 0.16);
   filter: drop-shadow(0 0 28px rgba(249, 115, 22, 0.3));
-  animation: homePulse 7.5s ease-in-out infinite;
+  animation: homeBounce 7.5s ease-in-out infinite;
   animation-delay: -2.1s;
 }
 
@@ -359,8 +360,9 @@
   top: 8%;
   right: 2%;
   color: rgba(232, 121, 249, 0.18);
-  filter: drop-shadow(0 0 28px rgba(232, 121, 249, 0.35));
-  animation: homeTwist 5.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 28px rgba(232, 121, 249, 0.3));
+  // animation: homeTwist 5.5s ease-in-out infinite;
+  animation: homeBounce 6s ease-in-out infinite;
   animation-delay: -1s;
 }
 
@@ -370,7 +372,8 @@
   right: 4%;
   color: rgba(6, 182, 212, 0.17);
   filter: drop-shadow(0 0 28px rgba(6, 182, 212, 0.3));
-  animation: homeWhirl 5s ease-in-out infinite;
+  // animation: homeWhirl 5s ease-in-out infinite;
+  animation: homePulse 7.5s ease-in-out infinite;
   animation-delay: -3.5s;
 }
 

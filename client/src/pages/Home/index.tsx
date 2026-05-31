@@ -11,9 +11,9 @@ import {
   MedalIcon,
   PulseIcon,
   JoystickIcon,
-  BombIcon,
-  DotsNineIcon,
-  SkullIcon,
+  FlyingSaucerIcon,
+  RocketLaunchIcon,
+  GhostIcon,
 } from '@phosphor-icons/react';
 import StatCard from '../../components/ui/StatCard';
 import styles from './Home.module.scss';
@@ -41,20 +41,20 @@ export default function Home() {
       <section className={styles.podiumSection}>
         {/* Floating PS-button shapes — concave around the podium */}
         <div className={`${styles.homeShape} ${styles.homeShapeTL}`}>
-          <JoystickIcon size={110} weight='thin' />
+          <RocketLaunchIcon size={120} weight='thin' />
         </div>
         <div className={`${styles.homeShape} ${styles.homeShapeBL}`}>
-          <BombIcon size={130} weight='thin' />
+          <JoystickIcon size={110} weight='thin' />
         </div>
         <div className={`${styles.homeShape} ${styles.homeShapeTR}`}>
-          <DotsNineIcon size={120} weight='thin' />
+          <FlyingSaucerIcon size={130} weight='thin' />
         </div>
         <div className={`${styles.homeShape} ${styles.homeShapeBR}`}>
-          <SkullIcon size={110} weight='thin' />
+          <GhostIcon size={110} weight='thin' />
         </div>
-        <h1 className={styles.heading}>Arcade Ladder Hall</h1>
+        <h1 className={styles.heading}>Arcade Ladder Leaders</h1>
         <p className={styles.subheading}>
-          Top players across all games, ranked by total score
+          Top players ranked by total score, across all games
         </p>
         <div className={styles.podium}>
           {second && <PodiumCard entry={second} rank={2} />}

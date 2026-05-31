@@ -3,14 +3,6 @@ import type { GameProps } from '../../types';
 import styles from './TypingSpeed.module.scss';
 
 const WORDS = [
-  'the',
-  'quick',
-  'brown',
-  'fox',
-  'jumps',
-  'over',
-  'lazy',
-  'dog',
   'arcade',
   'ladder',
   'typing',
@@ -21,10 +13,35 @@ const WORDS = [
   'react',
   'pixel',
   'cyber',
-  'blast',
-  'pulse',
   'glitch',
   'neon',
+  'mountain',
+  'success',
+  'parrot',
+  'revolution',
+  'umbrella',
+  'galaxy',
+  'dinosaur',
+  'volcano',
+  'pirate',
+  'ninja',
+  'robot',
+  'zombie',
+  'code',
+  'wizard',
+  'computer',
+  'nerd',
+  'keyboard',
+  'mouse',
+  'tornado',
+  'rain',
+  'dialogue',
+  'experience',
+  'level',
+  'electricity',
+  'internet',
+  'website',
+  'database',
 ];
 
 const GAME_DURATION = 30; // seconds
@@ -102,11 +119,30 @@ export default function TypingSpeed({
     }
   }
 
+  const elapsed = Math.max(1, GAME_DURATION - timeLeft);
+  const wpm = Math.round((correct / elapsed) * 60);
+  const accuracy =
+    correct + errors > 0
+      ? Math.round((correct / (correct + errors)) * 100)
+      : 100;
+  const liveScore = Math.round(wpm * (accuracy / 100));
   const progress = ((GAME_DURATION - timeLeft) / GAME_DURATION) * 100;
 
   return (
     <div className={styles.game}>
       <div className={styles.timer}>{timeLeft}s</div>
+      <div className={styles.scoreLive}>
+        <span className={styles.wpm}>
+          {wpm} <small>WPM</small>
+        </span>
+        <span className={styles.accuracy}>
+          {accuracy}
+          <small>%</small>
+        </span>
+        <span className={styles.scoreVal}>
+          {liveScore} <small>pts</small>
+        </span>
+      </div>
       <div className={styles.wordDisplay}>
         {words
           .slice(Math.max(0, currentIndex - 2), currentIndex + 12)
@@ -134,6 +170,7 @@ export default function TypingSpeed({
         autoCapitalize='off'
         spellCheck={false}
       />
+      <span className={styles.hint}>Press Spacebar to submit</span>
       <div className={styles.progressBar}>
         <div
           className={styles.progressFill}

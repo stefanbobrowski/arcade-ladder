@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import {
-  CrosshairIcon,
-  CylinderIcon,
-  RocketLaunchIcon,
+  LadderSimpleIcon,
+  EnvelopeIcon,
+  BugIcon,
   GhostIcon,
   EnvelopeSimpleIcon,
+  CrosshairIcon,
 } from '@phosphor-icons/react';
 import styles from './About.module.scss';
 
@@ -26,20 +27,27 @@ export default function About() {
         <h2 className={styles.sectionHeading}>What is Arcade Ladder?</h2>
         <p>
           Arcade Ladder is a collection of fast, browser-based mini-games with a
-          shared leaderboard. Compete across a growing roster — from{' '}
+          shared leaderboard. Compete across an evolving list of games, such as{' '}
           <Link to='/games/typing-speed' className={styles.link}>
             Typing Speed
-          </Link>{' '}
-          to{' '}
+          </Link>
+          {', '}
           <Link to='/games/reaction-grid' className={styles.link}>
             Reaction Grid
           </Link>
-          ,{' '}
+          {', and '}
           <Link to='/games/pizza-time' className={styles.link}>
             Pizza Time
           </Link>
-          , and more. Every round earns XP toward your rank, and the global
-          leaderboard updates in real time.
+          , against an ever-growing pool of players. Every game nets your{' '}
+          <Link to='/profile' className={styles.link}>
+            profile
+          </Link>{' '}
+          XP, and high-scores earn your spot on the global{' '}
+          <Link to='/leaderboard' className={styles.link}>
+            leaderboard
+          </Link>
+          !
         </p>
         <p>
           No downloads, no installs, no subscriptions. Just open, play, and
@@ -50,19 +58,13 @@ export default function About() {
       {/* Section 2 — Built solo ○ */}
       <section className={styles.section}>
         <div className={`${styles.sectionShape} ${styles.shapeCircle}`}>
-          <CylinderIcon size={310} weight='thin' />
+          <GhostIcon size={310} weight='thin' />
         </div>
-        <h2 className={styles.sectionHeading}>Engineered solo, from scratch</h2>
-        <p>
-          Every pixel of this platform — the REST API, database schema,
-          authentication, every game mechanic, and the full UI — was designed
-          and built by one developer. No team, no framework shortcuts. Just a
-          genuine interest in building things that are polished and fun.
-        </p>
+        <h2 className={styles.sectionHeading}>Solo Dev</h2>
         <p>
           The games are written in pure React using the Canvas API and Pointer
-          Events — no game engine, no library. The backend is a Fastify server
-          on Node.js with PostgreSQL, deployed on Google Cloud Run.
+          Events. No game engine, no library. The backend is a Fastify server on
+          Node.js with PostgreSQL, deployed on Google Cloud Run.
         </p>
         <div className={styles.techStack}>
           {[
@@ -85,37 +87,42 @@ export default function About() {
       {/* Section 3 — What's next △ */}
       <section className={styles.section}>
         <div className={`${styles.sectionShape} ${styles.shapeTriangle}`}>
-          <RocketLaunchIcon size={280} weight='thin' />
+          <BugIcon size={280} weight='thin' />
         </div>
-        <h2 className={styles.sectionHeading}>What's coming</h2>
-        <p>The roadmap is always growing:</p>
-        <ul className={styles.list}>
-          <li>More games across skill categories</li>
-          <li>Seasonal tournaments and score resets</li>
-          <li>User profiles with full game history &amp; stats</li>
-          <li>Mobile-first game controls</li>
-          <li>Custom avatar builder</li>
-        </ul>
+        <h2 className={styles.sectionHeading}>Submit Bugs or Feedback</h2>
+        <p>Please report any issues or bugs you encounter while gaming.</p>
+        <p>
+          Please share your thoughts, feedback, or suggestions to help us
+          improve the platform.
+        </p>
+        <p>
+          <a
+            href='mailto:stefanbobrowski1@gmail.com'
+            className={styles.emailLink}
+          >
+            stefanbobrowski1@gmail.com
+          </a>
+        </p>
       </section>
 
-      {/* Section 4 — Work with me × */}
+      {/* Section 4 — Business Inquiries × */}
       <section className={styles.section}>
         <div className={`${styles.sectionShape} ${styles.shapeX}`}>
-          <GhostIcon size={300} weight='thin' />
+          <EnvelopeIcon size={280} weight='thin' />
         </div>
-        <h2 className={styles.sectionHeading}>Work with me</h2>
+        <h2 className={styles.sectionHeading}>Business Inquiries</h2>
         <p>
-          I'm a full-stack developer open to freelance projects, contract work,
-          and interesting collaborations. If you need something built well — a
-          product, a tool, or a great side project — let's talk.
+          Feel free to reach out if you're interested in collaborating,
+          advertising, sponsoring, or have any business inquiries related to
+          Arcade Ladder.
         </p>
-        <p>
-          Whether it's a consumer app, internal dashboard, or something totally
-          new, I build things end-to-end and ship them.
-        </p>
-        <a href='mailto:contact@arcadeladder.app' className={styles.emailLink}>
+
+        <a
+          href='mailto:stefanbobrowski1@gmail.com'
+          className={styles.emailLink}
+        >
           <EnvelopeSimpleIcon size={20} weight='bold' />
-          contact@arcadeladder.app
+          stefanbobrowski1@gmail.com
         </a>
       </section>
 

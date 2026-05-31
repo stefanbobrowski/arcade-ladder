@@ -64,7 +64,8 @@ INSERT INTO games (slug, title, description, emoji) VALUES
   ('match-game',     'Match Game',     'Match pairs of items as quickly as possible.',                                        '👣'),
   ('dots-boxes',     'Dots & Boxes',   'Claim boxes by completing their four sides before the CPU.',                          '⏹️'),
   ('pizza-time',   'Pizza Time',   'Serve pizzas to your hungry customers.',   '🍕'),
-  ('snake-escape',   'Snake Escape',   'Launch snakes off the grid in the right order — one wrong move and it''s game over.', '🐍');
+  ('snake-escape',   'Snake Escape',   'Launch snakes off the grid in the right order — one wrong move and it''s game over.', '🐍'),
+  ('all-in-blackjack',   'All-In Blackjack',   'Go all-in or fold in this high-stakes blackjack game against the dealer.', '🃏');
 
 -- ── Seed users (dev / demo accounts) ──────────────────────────────────────────
 

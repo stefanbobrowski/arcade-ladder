@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { GameProps } from '../../types';
 import styles from './QuickMath.module.scss';
 
-const GAME_DURATION = 60;
+const GAME_DURATION = 30;
 const MAX_MULT = 3;
 
 type Op = '+' | '−' | '×' | '÷';

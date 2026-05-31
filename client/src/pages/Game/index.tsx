@@ -1,5 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
+import { Medal } from '@phosphor-icons/react';
 import api from '../../api/client';
 import type { Game, LeaderboardEntry } from '../../types';
 import { useAuth } from '../../context/AuthContext';
@@ -16,11 +17,12 @@ const GAME_COMPONENTS: Record<
   'reaction-grid': lazy(() => import('../../games/ReactionGrid')),
   'pattern-memory': lazy(() => import('../../games/PatternMemory')),
   'quick-math': lazy(() => import('../../games/QuickMath')),
-  'color-sort': lazy(() => import('../../games/ColorSort')),
+  'solution-color-sort': lazy(() => import('../../games/ColorSort')),
   'balloon-popper': lazy(() => import('../../games/BalloonPopper')),
   'match-game': lazy(() => import('../../games/MatchGame')),
   'dots-boxes': lazy(() => import('../../games/DotsBoxes')),
   'pizza-time': lazy(() => import('../../games/PizzaTime')),
+  'all-in-blackjack': lazy(() => import('../../games/AllInBlackjack')),
   'snake-escape': lazy(() => import('../../games/SnakeEscape')),
 };
 
@@ -173,9 +175,14 @@ export default function Game() {
   );
 }
 
+const MEDAL_COLORS: Record<number, string> = {
+  1: '#f59e0b',
+  2: '#94a3b8',
+  3: '#b45309',
+};
+
 function rankDisplay(rank: number) {
-  if (rank === 1) return '🥇';
-  if (rank === 2) return '🥈';
-  if (rank === 3) return '🥉';
+  if (rank <= 3)
+    return <Medal size={18} weight='fill' color={MEDAL_COLORS[rank]} />;
   return rank;
 }

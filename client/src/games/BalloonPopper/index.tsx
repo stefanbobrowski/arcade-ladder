@@ -5,6 +5,63 @@ import styles from './BalloonPopper.module.scss';
 const GAME_DURATION = 30;
 const BALLOON_COUNT = 10;
 
+// ── Web Audio sound effects ──────────────────────────────────────────────────
+let audioCtx: AudioContext | null = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  return audioCtx;
+}
+
+function playPop() {
+  const ctx = getAudioCtx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(520, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.12);
+  gain.gain.setValueAtTime(0.38, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.14);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.14);
+}
+
+function playBlackHole() {
+  const ctx = getAudioCtx();
+  // A low descending wobble
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(220, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.35);
+  gain.gain.setValueAtTime(0.3, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.38);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.4);
+}
+
+function playGiftBox() {
+  const ctx = getAudioCtx();
+  // Quick ascending jingle: C E G high-C
+  const notes = [523, 659, 784, 1047];
+  notes.forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'triangle';
+    const t = ctx.currentTime + i * 0.09;
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.28, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc.start(t);
+    osc.stop(t + 0.16);
+  });
+}
+
 const EMOJI_POOL = ['🎈', '🎈', '🎈', '🎈', '🎈', '🎈', '⚫', '⚫', '🎁'];
 
 const BALLOON_POINTS: Record<string, number> = {
@@ -26,7 +83,8 @@ function randomBalloonVars() {
   const midDrift = (Math.random() * 80 - 40).toFixed(1);
   const endRot = (Math.random() * 40 - 20).toFixed(1);
   const midRot = (Math.random() * 20 - 10).toFixed(1);
-  const duration = (Math.random() * 2 + 2.5).toFixed(2);
+  // Slowed down: was 2.5–4.5s, now 3.5–6s
+  const duration = (Math.random() * 2.5 + 3.5).toFixed(2);
   return {
     '--drift': `${drift}px`,
     '--mid-drift': `${midDrift}px`,
@@ -124,6 +182,9 @@ export default function BalloonPopper({
     scoreRef.current = Math.max(0, scoreRef.current + pts);
     setScore(scoreRef.current);
     onScoreUpdate(scoreRef.current);
+    if (emoji === '⚫') playBlackHole();
+    else if (emoji === '🎁') playGiftBox();
+    else playPop();
     respawn(id);
   }
 

@@ -2,11 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { GameProps } from '../../types';
 import styles from './SnakeEscape.module.scss';
 
-const GRID = 7;
-const CELL = 50;
-const PAD = 16;
+const GRID = 10;
+const CELL = 30;
+const PAD = 50;
 const SVG_SIZE = PAD * 2 + GRID * CELL;
 const GAME_DURATION = 30;
+const EXIT_STEP_MS = 80;
+const MIN_SNAKES = 4; // always keep at least this many on the board
 
 const SNAKE_COLORS = [
   '#6366f1',
@@ -31,13 +33,6 @@ interface Snake {
   color: string;
 }
 
-const ARROW: Record<Dir, string> = {
-  up: '▲',
-  down: '▼',
-  left: '◀',
-  right: '▶',
-};
-
 function getDelta(dir: Dir): [number, number] {
   return dir === 'up'
     ? [-1, 0]
@@ -46,6 +41,61 @@ function getDelta(dir: Dir): [number, number] {
       : dir === 'left'
         ? [0, -1]
         : [0, 1];
+}
+
+// Returns eye positions and a forked-tongue SVG path string for a snake head
+function getHeadDecorations(dir: Dir, cx: number, cy: number) {
+  const eyeForward = 9;
+  const eyeSide = 7;
+  const eyeR = 3.5;
+  const frontEdge = CELL / 2 - 4; // distance from cell centre to head rect edge
+  const stemLen = 12;
+  const forkLen = 6;
+  const forkSpread = 5;
+
+  let eye1: [number, number];
+  let eye2: [number, number];
+  let tongueBase: [number, number];
+  let tongueMid: [number, number];
+  let fork1End: [number, number];
+  let fork2End: [number, number];
+
+  if (dir === 'right') {
+    eye1 = [cx + eyeForward, cy - eyeSide];
+    eye2 = [cx + eyeForward, cy + eyeSide];
+    tongueBase = [cx + frontEdge, cy];
+    tongueMid = [cx + frontEdge + stemLen, cy];
+    fork1End = [tongueMid[0] + forkLen, tongueMid[1] - forkSpread];
+    fork2End = [tongueMid[0] + forkLen, tongueMid[1] + forkSpread];
+  } else if (dir === 'left') {
+    eye1 = [cx - eyeForward, cy - eyeSide];
+    eye2 = [cx - eyeForward, cy + eyeSide];
+    tongueBase = [cx - frontEdge, cy];
+    tongueMid = [cx - frontEdge - stemLen, cy];
+    fork1End = [tongueMid[0] - forkLen, tongueMid[1] - forkSpread];
+    fork2End = [tongueMid[0] - forkLen, tongueMid[1] + forkSpread];
+  } else if (dir === 'down') {
+    eye1 = [cx - eyeSide, cy + eyeForward];
+    eye2 = [cx + eyeSide, cy + eyeForward];
+    tongueBase = [cx, cy + frontEdge];
+    tongueMid = [cx, cy + frontEdge + stemLen];
+    fork1End = [tongueMid[0] - forkSpread, tongueMid[1] + forkLen];
+    fork2End = [tongueMid[0] + forkSpread, tongueMid[1] + forkLen];
+  } else {
+    eye1 = [cx - eyeSide, cy - eyeForward];
+    eye2 = [cx + eyeSide, cy - eyeForward];
+    tongueBase = [cx, cy - frontEdge];
+    tongueMid = [cx, cy - frontEdge - stemLen];
+    fork1End = [tongueMid[0] - forkSpread, tongueMid[1] - forkLen];
+    fork2End = [tongueMid[0] + forkSpread, tongueMid[1] - forkLen];
+  }
+
+  const tonguePath =
+    `M${tongueBase[0]},${tongueBase[1]} L${tongueMid[0]},${tongueMid[1]} ` +
+    `M${tongueMid[0]},${tongueMid[1]} L${fork1End[0]},${fork1End[1]} ` +
+    `M${tongueMid[0]},${tongueMid[1]} L${fork2End[0]},${fork2End[1]}`;
+
+  return { eye1, eye2, eyeR, tonguePath };
 }
 
 // The head is the cell that leads in the movement direction
@@ -59,7 +109,11 @@ function buildGrid(snakes: Snake[]): (number | null)[][] {
   const g: (number | null)[][] = Array.from({ length: GRID }, () =>
     Array(GRID).fill(null)
   );
-  for (const s of snakes) for (const [r, c] of s.cells) g[r][c] = s.id;
+  for (const s of snakes) {
+    for (const [r, c] of s.cells) {
+      if (r >= 0 && r < GRID && c >= 0 && c < GRID) g[r][c] = s.id;
+    }
+  }
   return g;
 }
 
@@ -130,6 +184,102 @@ function placeSnakes(
   return placed;
 }
 
+// Renders body + connectors + head decorations for one snake
+function SnakeShape({
+  snake,
+  glowFilter,
+  cursor,
+  opacity,
+  onClick,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  snake: Snake;
+  glowFilter: string;
+  cursor: string;
+  opacity: number;
+  onClick?: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+}) {
+  const head = getHead(snake);
+  const hx = PAD + head[1] * CELL + CELL / 2;
+  const hy = PAD + head[0] * CELL + CELL / 2;
+  const { eye1, eye2, eyeR, tonguePath } = getHeadDecorations(
+    snake.dir,
+    hx,
+    hy
+  );
+
+  return (
+    <g
+      style={{ cursor, opacity, filter: glowFilter, transition: 'filter 0.1s' }}
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      {/* Body cells */}
+      {snake.cells.map(([r, c], idx) => {
+        const isHead = r === head[0] && c === head[1];
+        return (
+          <rect
+            key={idx}
+            x={PAD + c * CELL + 4}
+            y={PAD + r * CELL + 4}
+            width={CELL - 8}
+            height={CELL - 8}
+            rx={isHead ? 12 : 8}
+            fill={snake.color}
+            opacity={isHead ? 1 : 0.7}
+          />
+        );
+      })}
+
+      {/* Connector bridges between adjacent cells */}
+      {snake.cells.slice(0, -1).map(([r, c], idx) => {
+        const isH = r === snake.cells[idx + 1][0];
+        return isH ? (
+          <rect
+            key={`br-${idx}`}
+            x={PAD + (c + 1) * CELL - 4}
+            y={PAD + r * CELL + 4}
+            width={8}
+            height={CELL - 8}
+            fill={snake.color}
+            opacity={0.7}
+          />
+        ) : (
+          <rect
+            key={`br-${idx}`}
+            x={PAD + c * CELL + 4}
+            y={PAD + (r + 1) * CELL - 4}
+            width={CELL - 8}
+            height={8}
+            fill={snake.color}
+            opacity={0.7}
+          />
+        );
+      })}
+
+      {/* Eyes */}
+      <circle cx={eye1[0]} cy={eye1[1]} r={eyeR} fill='white' />
+      <circle cx={eye1[0]} cy={eye1[1]} r={eyeR * 0.52} fill='#111' />
+      <circle cx={eye2[0]} cy={eye2[1]} r={eyeR} fill='white' />
+      <circle cx={eye2[0]} cy={eye2[1]} r={eyeR * 0.52} fill='#111' />
+
+      {/* Forked tongue */}
+      <path
+        d={tonguePath}
+        stroke='#f43f5e'
+        strokeWidth={1.8}
+        fill='none'
+        strokeLinecap='round'
+        style={{ pointerEvents: 'none' }}
+      />
+    </g>
+  );
+}
+
 export default function SnakeEscape({
   onScoreUpdate,
   onGameOver,
@@ -140,7 +290,7 @@ export default function SnakeEscape({
   const [score, setScore] = useState(0);
   const [hoverId, setHoverId] = useState<number | null>(null);
   const [flash, setFlash] = useState<'good' | 'bad' | null>(null);
-  const [exitingId, setExitingId] = useState<number | null>(null);
+  const [exitingSnakes, setExitingSnakes] = useState<Snake[]>([]);
   const [gameEnded, setGameEnded] = useState(false);
 
   const scoreRef = useRef(0);
@@ -148,6 +298,7 @@ export default function SnakeEscape({
   const snakeIdRef = useRef(0);
   const colorOffsetRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const exitIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lockedRef = useRef(false);
   // Ref mirror of snakes so setTimeout callbacks read latest state
   const snakesRef = useRef<Snake[]>([]);
@@ -173,11 +324,20 @@ export default function SnakeEscape({
       setTimeLeft(GAME_DURATION);
       setFlash(null);
       setGameEnded(false);
-      setExitingId(null);
+      setExitingSnakes([]);
       setHoverId(null);
       setSnakes(buildInitial());
+      if (exitIntervalRef.current) {
+        clearInterval(exitIntervalRef.current);
+        exitIntervalRef.current = null;
+      }
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (exitIntervalRef.current) {
+        clearInterval(exitIntervalRef.current);
+        exitIntervalRef.current = null;
+      }
+      setExitingSnakes([]);
     }
   }, [isPlaying, buildInitial]);
 
@@ -197,6 +357,37 @@ export default function SnakeEscape({
     if (timeLeft === 0 && isPlaying) onGameOver(scoreRef.current);
   }, [timeLeft, isPlaying, onGameOver]);
 
+  // Starts sliding a snake off the grid one cell at a time
+  function startExitAnimation(snake: Snake) {
+    setExitingSnakes((prev) => [...prev, snake]);
+
+    if (exitIntervalRef.current === null) {
+      exitIntervalRef.current = setInterval(() => {
+        setExitingSnakes((prev) => {
+          const next = prev
+            .map((s) => {
+              const [dr, dc] = getDelta(s.dir);
+              const newCells = s.cells.map(
+                ([r, c]) => [r + dr, c + dc] as [number, number]
+              );
+              // Keep animating while any cell is still near the visible area
+              const anyVisible = newCells.some(
+                ([r, c]) => r > -2 && r < GRID + 2 && c > -2 && c < GRID + 2
+              );
+              return anyVisible ? { ...s, cells: newCells } : null;
+            })
+            .filter(Boolean) as Snake[];
+
+          if (next.length === 0) {
+            clearInterval(exitIntervalRef.current!);
+            exitIntervalRef.current = null;
+          }
+          return next;
+        });
+      }, EXIT_STEP_MS);
+    }
+  }
+
   function handleSnakeClick(snakeId: number) {
     if (!isPlaying || lockedRef.current || gameEnded) return;
     const snake = snakesRef.current.find((s) => s.id === snakeId);
@@ -208,25 +399,33 @@ export default function SnakeEscape({
     for (const [r, c] of snake.cells) grid[r][c] = null;
 
     if (checkMove(snake, grid) === 'escape') {
-      setExitingId(snakeId);
       setFlash('good');
       const pts = snake.cells.length * 10;
       scoreRef.current += pts;
       setScore(scoreRef.current);
       onScoreUpdate(scoreRef.current);
 
+      // Remove from active board immediately; animate it sliding out
+      setSnakes((prev) => prev.filter((s) => s.id !== snakeId));
+      startExitAnimation(snake);
+
       setTimeout(() => {
         setFlash(null);
-        setExitingId(null);
         exitedRef.current++;
-        const remaining = snakesRef.current.filter((s) => s.id !== snakeId);
+        // snakesRef.current reflects the board AFTER the escaped snake was removed
+        const remaining = snakesRef.current;
         let nextSnakes = remaining;
-        // Every 3 escapes, spawn 2 fresh snakes
-        if (exitedRef.current % 3 === 0) {
+
+        // Spawn every 3 escapes OR whenever the board drops below MIN_SNAKES
+        const needsRefill = nextSnakes.length < MIN_SNAKES;
+        if (exitedRef.current % 3 === 0 || needsRefill) {
           const newGrid = buildGrid(remaining);
           colorOffsetRef.current += 2;
+          const spawnCount = needsRefill
+            ? Math.max(2, MIN_SNAKES - nextSnakes.length + 2)
+            : 2;
           const spawned = placeSnakes(
-            2,
+            spawnCount,
             newGrid,
             snakeIdRef.current,
             colorOffsetRef.current
@@ -297,91 +496,38 @@ export default function SnakeEscape({
             ))
           )}
 
-          {/* Snakes */}
+          {/* Snakes exiting (rendered below active snakes) */}
+          {exitingSnakes.map((snake) => (
+            <SnakeShape
+              key={`exit-${snake.id}`}
+              snake={snake}
+              glowFilter='none'
+              cursor='default'
+              opacity={0.85}
+            />
+          ))}
+
+          {/* Active snakes */}
           {snakes.map((snake) => {
             const isHovered = hoverId === snake.id;
-            const isExiting = exitingId === snake.id;
-            const head = getHead(snake);
-            const glowColor =
+            const glowFilter =
               isHovered && hoverResult === 'escape'
-                ? '#22c55e'
+                ? `drop-shadow(0 0 7px ${snake.color})`
                 : isHovered && hoverResult === 'blocked'
-                  ? '#ef4444'
-                  : null;
+                  ? 'drop-shadow(0 0 7px #ef4444)'
+                  : 'none';
 
             return (
-              <g
+              <SnakeShape
                 key={snake.id}
-                style={{
-                  cursor: isPlaying && !gameEnded ? 'pointer' : 'default',
-                  opacity: isExiting ? 0.15 : 1,
-                  transition: 'opacity 0.35s',
-                }}
+                snake={snake}
+                glowFilter={glowFilter}
+                cursor={isPlaying && !gameEnded ? 'pointer' : 'default'}
+                opacity={1}
                 onClick={() => handleSnakeClick(snake.id)}
                 onMouseEnter={() => setHoverId(snake.id)}
                 onMouseLeave={() => setHoverId(null)}
-              >
-                {/* Body cells */}
-                {snake.cells.map(([r, c], idx) => {
-                  const isHead = r === head[0] && c === head[1];
-                  return (
-                    <rect
-                      key={idx}
-                      x={PAD + c * CELL + 4}
-                      y={PAD + r * CELL + 4}
-                      width={CELL - 8}
-                      height={CELL - 8}
-                      rx={8}
-                      fill={glowColor ?? snake.color}
-                      opacity={isHead ? 1 : 0.72}
-                      stroke={glowColor ?? 'transparent'}
-                      strokeWidth={glowColor ? 2 : 0}
-                    />
-                  );
-                })}
-
-                {/* Connector bridges between adjacent cells */}
-                {snake.cells.slice(0, -1).map(([r, c], idx) => {
-                  const [nr, _nc] = snake.cells[idx + 1];
-                  const isH = r === nr;
-                  return isH ? (
-                    // Horizontal bridge: fills gap between cell [r,c] and [r,c+1]
-                    <rect
-                      key={`br-${idx}`}
-                      x={PAD + (c + 1) * CELL - 4}
-                      y={PAD + r * CELL + 4}
-                      width={8}
-                      height={CELL - 8}
-                      fill={glowColor ?? snake.color}
-                      opacity={0.72}
-                    />
-                  ) : (
-                    // Vertical bridge: fills gap between cell [r,c] and [r+1,c]
-                    <rect
-                      key={`br-${idx}`}
-                      x={PAD + c * CELL + 4}
-                      y={PAD + (r + 1) * CELL - 4}
-                      width={CELL - 8}
-                      height={8}
-                      fill={glowColor ?? snake.color}
-                      opacity={0.72}
-                    />
-                  );
-                })}
-
-                {/* Direction arrow on head */}
-                <text
-                  x={PAD + head[1] * CELL + CELL / 2}
-                  y={PAD + head[0] * CELL + CELL / 2 + 6}
-                  textAnchor='middle'
-                  fontSize={16}
-                  fontWeight='900'
-                  fill='rgba(255,255,255,0.9)'
-                  style={{ pointerEvents: 'none', userSelect: 'none' }}
-                >
-                  {ARROW[snake.dir]}
-                </text>
-              </g>
+              />
             );
           })}
         </svg>
