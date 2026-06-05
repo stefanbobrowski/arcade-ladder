@@ -17,7 +17,7 @@ export interface Game {
   total_plays: number;
 }
 
-export interface LeaderboardEntry {
+export interface LadderEntry {
   rank: number;
   user_id: string;
   username: string;

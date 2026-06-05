@@ -44,34 +44,46 @@ export const scoreRoutes: FastifyPluginAsync = async (fastify) => {
         ]);
       }
 
-      // Return new rank
-      const { rows: rankRows } = await fastify.db.query(
-        `SELECT rank FROM (
-         SELECT user_id, RANK() OVER (ORDER BY MAX(score) DESC)::int AS rank
-         FROM scores WHERE game_id = $1 GROUP BY user_id
-       ) r WHERE user_id = $2`,
-        [gameId, payload.sub]
-      );
+      // Return new rank + total players + recent personal scores (all in 2 queries)
+      const [rankResult, recentResult] = await Promise.all([
+        fastify.db.query(
+          `SELECT rank, total_players FROM (
+             SELECT user_id,
+               RANK() OVER (ORDER BY MAX(score) DESC)::int AS rank,
+               COUNT(*) OVER ()::int AS total_players
+             FROM scores WHERE game_id = $1 GROUP BY user_id
+           ) r WHERE user_id = $2`,
+          [gameId, payload.sub]
+        ),
+        fastify.db.query(
+          `SELECT score, created_at FROM scores
+           WHERE game_id = $1 AND user_id = $2
+           ORDER BY created_at DESC LIMIT 5`,
+          [gameId, payload.sub]
+        ),
+      ]);
 
-      // Bust leaderboard caches so next read is fresh
-      cache.delete('leaderboard:top');
-      cache.delete('leaderboard:activity');
-      cache.delete('leaderboard:stats');
-      cache.delete(`leaderboard:game:${slug}`);
+      // Bust ladder caches so next read is fresh
+      cache.delete('ladder:top');
+      cache.delete('ladder:activity');
+      cache.delete('ladder:stats');
+      cache.delete(`ladder:game:${slug}`);
 
       return {
         success: true,
-        rank: rankRows[0]?.rank ?? null,
+        rank: rankResult.rows[0]?.rank ?? null,
+        total_players: rankResult.rows[0]?.total_players ?? 1,
         xp_earned: xpEarned,
+        recent_scores: recentResult.rows,
       };
     }
   );
 
-  // GET /games/:slug/leaderboard — top 50
-  fastify.get('/:slug/leaderboard', async (request, reply) => {
+  // GET /games/:slug/ladder — top 50
+  fastify.get('/:slug/ladder', async (request, reply) => {
     const { slug } = request.params as { slug: string };
 
-    const cacheKey = `leaderboard:game:${slug}`;
+    const cacheKey = `ladder:game:${slug}`;
     const cached = cache.get<unknown[]>(cacheKey);
     if (cached) return cached;
 
@@ -99,9 +111,9 @@ export const scoreRoutes: FastifyPluginAsync = async (fastify) => {
     return rows;
   });
 
-  // GET /games/:slug/leaderboard/me — current user rank + neighbors
+  // GET /games/:slug/ladder/me — current user rank + neighbors
   fastify.get(
-    '/:slug/leaderboard/me',
+    '/:slug/ladder/me',
     { preHandler: requireAuth },
     async (request, reply) => {
       const { slug } = request.params as { slug: string };

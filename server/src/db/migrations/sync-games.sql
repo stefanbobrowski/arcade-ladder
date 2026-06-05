@@ -15,7 +15,8 @@ INSERT INTO games (slug, title, description, emoji) VALUES
   ('match-game',     'Match Game',     'Match pairs of items as quickly as possible.',                                        '🧩'),
   ('dots-boxes',     'Dots & Boxes',   'Claim boxes by completing their four sides before the CPU.',                          '🟦'),
   ('pizza-time',     'Pizza Time',     'Serve pizzas to your hungry customers.',                                              '🍕'),
-  ('all-in-blackjack',   'All-in Blackjack',   'All-in Blackjack — coming soon.',   '🃏'),
+  ('all-in-blackjack',   'All-in Blackjack',   'Go all-in, all the time.',   '🃏'),
+  ('city-insect',   'City Insect',   'City Insect — coming soon.',   '🪳'),
   ('snake-escape',   'Snake Escape',   'Launch snakes off the grid safely.', '🐍')
 ON CONFLICT (slug) DO UPDATE
   SET title       = EXCLUDED.title,

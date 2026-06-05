@@ -10,9 +10,9 @@ import {
   CrownSimpleIcon,
   MedalIcon,
   PulseIcon,
-  JoystickIcon,
   FlyingSaucerIcon,
   RocketLaunchIcon,
+  PizzaIcon,
   GhostIcon,
 } from '@phosphor-icons/react';
 import StatCard from '../../components/ui/StatCard';
@@ -25,12 +25,12 @@ export default function Home() {
 
   useEffect(() => {
     api
-      .get<OverallEntry[]>('/leaderboard/top')
+      .get<OverallEntry[]>('/ladder/top')
       .then((r) => setTop3(r.data.slice(0, 3)));
     api
-      .get<ActivityEvent[]>('/leaderboard/activity')
+      .get<ActivityEvent[]>('/ladder/activity')
       .then((r) => setActivity(r.data));
-    api.get<SiteStats>('/leaderboard/stats').then((r) => setStats(r.data));
+    api.get<SiteStats>('/ladder/stats').then((r) => setStats(r.data));
   }, []);
 
   const [first, second, third] = top3;
@@ -41,13 +41,13 @@ export default function Home() {
       <section className={styles.podiumSection}>
         {/* Floating PS-button shapes — concave around the podium */}
         <div className={`${styles.homeShape} ${styles.homeShapeTL}`}>
-          <RocketLaunchIcon size={120} weight='thin' />
+          <FlyingSaucerIcon size={130} weight='thin' />
         </div>
         <div className={`${styles.homeShape} ${styles.homeShapeBL}`}>
-          <JoystickIcon size={110} weight='thin' />
+          <PizzaIcon size={110} weight='thin' />
         </div>
         <div className={`${styles.homeShape} ${styles.homeShapeTR}`}>
-          <FlyingSaucerIcon size={130} weight='thin' />
+          <RocketLaunchIcon size={120} weight='thin' />
         </div>
         <div className={`${styles.homeShape} ${styles.homeShapeBR}`}>
           <GhostIcon size={110} weight='thin' />
@@ -70,13 +70,13 @@ export default function Home() {
             icon={<UsersIcon size={28} weight='duotone' color='#7c3aed' />}
             value={stats.total_players}
             label='Total Players'
-            to='/leaderboard'
+            to='/ladder'
           />
           <StatCard
             icon={<LightningIcon size={28} weight='duotone' color='#06b6d4' />}
             value={stats.total_plays}
             label='Games Played'
-            to='/leaderboard'
+            to='/ladder'
           />
           <StatCard
             icon={
@@ -178,7 +178,7 @@ function PodiumCard({ entry, rank }: { entry: OverallEntry; rank: 1 | 2 | 3 }) {
     <div className={`${styles.podiumOuter} ${styles[`rank${rank}`]}`}>
       {rank === 1 && (
         <div className={styles.podiumCrown}>
-          <CrownSimpleIcon size={48} weight='duotone' color='#f59e0b' />
+          <CrownSimpleIcon size={80} weight='duotone' color='#e7b14df6' />
         </div>
       )}
       <Link to={`/profile/${entry.username}`} className={styles.podiumCard}>

@@ -2,7 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { Medal } from '@phosphor-icons/react';
 import api from '../../api/client';
-import type { Game, LeaderboardEntry } from '../../types';
+import type { Game, LadderEntry } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import Avatar from '../../components/ui/Avatar';
 import styles from './Game.module.scss';
@@ -23,6 +23,7 @@ const GAME_COMPONENTS: Record<
   'dots-boxes': lazy(() => import('../../games/DotsBoxes')),
   'pizza-time': lazy(() => import('../../games/PizzaTime')),
   'all-in-blackjack': lazy(() => import('../../games/AllInBlackjack')),
+  'city-insect': lazy(() => import('../../games/CityInsect')),
   'snake-escape': lazy(() => import('../../games/SnakeEscape')),
 };
 
@@ -31,26 +32,30 @@ export default function Game() {
   const { user } = useAuth();
 
   const [game, setGame] = useState<Game | null>(null);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [ladder, setLadder] = useState<LadderEntry[]>([]);
   const [_currentScore, setCurrentScore] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   const [myRank, setMyRank] = useState<number | null>(null);
+  const [totalPlayers, setTotalPlayers] = useState<number>(0);
   const [xpEarned, setXpEarned] = useState(0);
+  const [recentScores, setRecentScores] = useState<
+    { score: number; created_at: string }[]
+  >([]);
 
   useEffect(() => {
     if (!slug) return;
     api.get<Game>(`/games/${slug}`).then((r) => setGame(r.data));
-    refreshLeaderboard();
+    refreshLadder();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
-  function refreshLeaderboard() {
+  function refreshLadder() {
     if (!slug) return;
     api
-      .get<LeaderboardEntry[]>(`/games/${slug}/leaderboard`)
-      .then((r) => setLeaderboard(r.data));
+      .get<LadderEntry[]>(`/games/${slug}/ladder`)
+      .then((r) => setLadder(r.data));
   }
 
   function handleStart() {
@@ -67,14 +72,16 @@ export default function Game() {
     if (user && slug) {
       const { data } = await api.post(`/games/${slug}/scores`, { score });
       setMyRank(data.rank);
+      setTotalPlayers(data.total_players ?? 0);
       setXpEarned(data.xp_earned);
-      refreshLeaderboard();
+      setRecentScores(data.recent_scores ?? []);
+      refreshLadder();
     }
   }
 
   const GameComponent = slug ? GAME_COMPONENTS[slug] : undefined;
   const myBest = user
-    ? (leaderboard.find((e) => e.user_id === user.id)?.best_score ?? null)
+    ? (ladder.find((e) => e.user_id === user.id)?.best_score ?? null)
     : null;
 
   if (!game) return <div className={styles.loading}>Loading...</div>;
@@ -118,11 +125,17 @@ export default function Game() {
                 {finalScore.toLocaleString()}
               </div>
               {myRank && (
-                <div className={styles.rankResult}>Rank #{myRank}</div>
+                <div className={styles.rankResult}>
+                  Rank #{myRank}
+                  {totalPlayers > 0 && (
+                    <span className={styles.rankTotal}> of {totalPlayers}</span>
+                  )}
+                </div>
               )}
               {xpEarned > 0 && (
                 <div className={styles.xpResult}>+{xpEarned} XP</div>
               )}
+
               <button className={styles.startBtn} onClick={handleStart}>
                 Play Again
               </button>
@@ -143,14 +156,14 @@ export default function Game() {
         </div>
       </div>
 
-      {/* Leaderboard sidebar */}
+      {/* Ladder sidebar */}
       <aside className={styles.sidebar}>
         <h2 className={styles.sidebarTitle}>🏆 Top Players</h2>
-        <ol className={styles.leaderboardList}>
-          {leaderboard.map((entry) => (
+        <ol className={styles.ladderList}>
+          {ladder.map((entry) => (
             <li
               key={entry.user_id}
-              className={`${styles.leaderboardRow} ${user?.id === entry.user_id ? styles.myRow : ''}`}
+              className={`${styles.ladderRow} ${user?.id === entry.user_id ? styles.myRow : ''}`}
             >
               <span className={styles.entryRank}>
                 {rankDisplay(entry.rank)}
@@ -170,6 +183,18 @@ export default function Game() {
             </li>
           ))}
         </ol>
+        {recentScores.length > 0 && user && (
+          <div className={styles.myRecentSection}>
+            <h3 className={styles.myRecentTitle}>Your Recent Scores</h3>
+            <ol className={styles.recentList}>
+              {recentScores.map((s, i) => (
+                <li key={i} className={i === 0 ? styles.recentBest : ''}>
+                  {s.score.toLocaleString()}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
       </aside>
     </div>
   );

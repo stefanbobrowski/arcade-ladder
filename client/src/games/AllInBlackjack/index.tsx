@@ -1,6 +1,236 @@
 import { useState, useRef, useEffect } from 'react';
+import { Coins } from '@phosphor-icons/react';
 import type { GameProps } from '../../types';
+import { getVolume } from '../../lib/audio';
+import VolumeControl from '../../components/ui/VolumeControl';
 import styles from './AllInBlackjack.module.scss';
+
+// ── Web Audio helpers ──────────────────────────────────────────────────────────
+let _audioCtx: AudioContext | null = null;
+function ac(): AudioContext {
+  if (!_audioCtx) _audioCtx = new AudioContext();
+  return _audioCtx;
+}
+
+function playCard() {
+  try {
+    const v = getVolume();
+    if (v === 0) return;
+    const ctx = ac();
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.06, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] =
+        (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2) * 0.35 * v;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(1, ctx.currentTime);
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+  } catch {
+    /* noop */
+  }
+}
+
+function playChipSlide() {
+  try {
+    const v = getVolume();
+    if (v === 0) return;
+    const ctx = ac();
+    const dur = 0.35;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1200, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + dur);
+    gain.gain.setValueAtTime(0.22 * v, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + dur);
+    // secondary clink
+    setTimeout(() => {
+      try {
+        const v2 = getVolume();
+        if (v2 === 0) return;
+        const ctx2 = ac();
+        const o2 = ctx2.createOscillator();
+        const g2 = ctx2.createGain();
+        o2.connect(g2);
+        g2.connect(ctx2.destination);
+        o2.type = 'sine';
+        o2.frequency.value = 2200;
+        g2.gain.setValueAtTime(0.12 * v2, ctx2.currentTime);
+        g2.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + 0.08);
+        o2.start(ctx2.currentTime);
+        o2.stop(ctx2.currentTime + 0.1);
+      } catch {
+        /* noop */
+      }
+    }, 200);
+  } catch {
+    /* noop */
+  }
+}
+
+function playKnock() {
+  try {
+    const v = getVolume();
+    if (v === 0) return;
+    const ctx = ac();
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      const env = Math.pow(1 - i / data.length, 3);
+      data[i] = (Math.random() * 2 - 1) * env * 0.6 * v;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 400;
+    src.connect(lp);
+    lp.connect(ctx.destination);
+    src.start();
+    setTimeout(() => {
+      try {
+        const v2 = getVolume();
+        if (v2 === 0) return;
+        const ctx2 = ac();
+        const b2 = ctx2.createBuffer(1, ctx2.sampleRate * 0.1, ctx2.sampleRate);
+        const d2 = b2.getChannelData(0);
+        for (let i = 0; i < d2.length; i++)
+          d2[i] =
+            (Math.random() * 2 - 1) * Math.pow(1 - i / d2.length, 3) * 0.5 * v2;
+        const s2 = ctx2.createBufferSource();
+        s2.buffer = b2;
+        const lp2 = ctx2.createBiquadFilter();
+        lp2.type = 'lowpass';
+        lp2.frequency.value = 350;
+        s2.connect(lp2);
+        lp2.connect(ctx2.destination);
+        s2.start();
+      } catch {
+        /* noop */
+      }
+    }, 140);
+  } catch {
+    /* noop */
+  }
+}
+
+function playWin() {
+  try {
+    const v = getVolume();
+    if (v === 0) return;
+    const ctx = ac();
+    const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.1;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.2 * v, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    });
+  } catch {
+    /* noop */
+  }
+}
+
+function playLose() {
+  try {
+    const v = getVolume();
+    if (v === 0) return;
+    const ctx = ac();
+    const notes = [330, 277, 220, 185]; // descending tones
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0.15 * v, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+      osc.start(t);
+      osc.stop(t + 0.25);
+    });
+  } catch {
+    /* noop */
+  }
+}
+
+function playBlackjack() {
+  try {
+    const v = getVolume();
+    if (v === 0) return;
+    const ctx = ac();
+    const fanfare = [523, 659, 784, 659, 1047];
+    fanfare.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + i * 0.08;
+      gain.gain.setValueAtTime(0.22 * v, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.start(t);
+      osc.stop(t + 0.2);
+    });
+  } catch {
+    /* noop */
+  }
+}
+
+function playPush() {
+  try {
+    const v = getVolume();
+    if (v === 0) return;
+    const ctx = ac();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = 440;
+    osc.frequency.linearRampToValueAtTime(440, ctx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.1 * v, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.35);
+  } catch {
+    /* noop */
+  }
+}
+
+function speak(text: string) {
+  try {
+    if (!window.speechSynthesis) return;
+    if (getVolume() === 0) return;
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = 1.1;
+    utt.pitch = 0.9;
+    utt.volume = Math.min(1, getVolume() * 1.2);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utt);
+  } catch {
+    /* noop */
+  }
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Suit = '♠' | '♥' | '♦' | '♣';
@@ -177,6 +407,8 @@ export default function AllInBlackjack({
     usedLoanRef.current = false;
     setBetAmount(cs);
     setCoinAnimating(true);
+    playChipSlide();
+    speak('All in');
     setTimeout(() => {
       setCoinAnimating(false);
       chipsAtStartRef.current = cs;
@@ -190,6 +422,9 @@ export default function AllInBlackjack({
       const dCards = [dCard1, dCard2];
       const hand: Hand = { cards: pCards, doubled: false, done: false };
 
+      // Card deal sounds
+      [0, 80, 160, 240].forEach((delay) => setTimeout(playCard, delay));
+
       setDealerCards(dCards);
       setHands([hand]);
       setActiveIdx(0);
@@ -200,6 +435,7 @@ export default function AllInBlackjack({
         const revealed = dCards.map((c) => ({ ...c, faceDown: false }));
         setDealerCards(revealed);
         if (isBJ(revealed)) {
+          playPush();
           setMsg('Both Blackjack — Push! Bet returned.');
           setPhase('result');
         } else {
@@ -211,6 +447,7 @@ export default function AllInBlackjack({
           setBetAmount(nc);
           setChips(nc);
           onScoreUpdate(nc);
+          playBlackjack();
           setMsg(`Blackjack! +${win} chips 🎉`);
           setHands([{ ...hand, done: true, result: 'blackjack' }]);
           setPhase('result');
@@ -224,7 +461,10 @@ export default function AllInBlackjack({
 
   // ── Player actions ─────────────────────────────────────────────────────────
   function doHit() {
+    speak('Hit');
+    playKnock();
     const card = drawCard();
+    setTimeout(playCard, 120);
     const newCards = [...hands[activeIdx].cards, card];
     const done = isBust(newCards) || handTotal(newCards) === 21;
     const newHands = hands.map((h, i) =>
@@ -235,6 +475,7 @@ export default function AllInBlackjack({
   }
 
   function doStand() {
+    speak('Stand');
     const newHands = hands.map((h, i) =>
       i === activeIdx ? { ...h, done: true } : h
     );
@@ -244,6 +485,8 @@ export default function AllInBlackjack({
 
   function doDouble() {
     // Takes a loan — one more card, then stand; marks loan used
+    speak('Double down');
+    playChipSlide();
     usedLoanRef.current = true;
     const cs = chipsAtStartRef.current;
     setBetAmount(cs * 2);
@@ -260,6 +503,8 @@ export default function AllInBlackjack({
 
   function doSplit() {
     // Takes a loan — split pair into two hands, each gets a new card
+    speak('Split');
+    playChipSlide();
     usedLoanRef.current = true;
     const [c1, c2] = hands[activeIdx].cards;
     const extra1 = drawCard();
@@ -336,23 +581,28 @@ export default function AllInBlackjack({
     const net = wins - losses;
 
     if (net > 0) {
-      // Win — loan doubles the reward (bet 2×, win 2× = chips ×3). Normal win = chips ×2.
-      const multiplier = usedLoan ? 3 : 2;
-      const nc = cs * multiplier;
+      // Sum each hand's payout individually so split + double is calculated correctly.
+      // Each hand's bet: doubled hands wagered cs×2, normal hands wagered cs.
+      // Win pays 2× the hand's bet; push returns the hand's bet.
+      const nc = resolved.reduce((sum, h) => {
+        const handBet = h.doubled ? cs * 2 : cs;
+        if (h.result === 'win') return sum + handBet * 2;
+        if (h.result === 'push') return sum + handBet;
+        return sum;
+      }, 0);
       chipsRef.current = nc;
       scoreRef.current = nc;
       setBetAmount(nc);
       setChips(nc);
       onScoreUpdate(nc);
-      const label = usedLoan
-        ? `Double win! ${cs} → ${nc} chips 🌟`
-        : `You win! ${cs} → ${nc} chips 🎉`;
-      setMsg(label);
+      playWin();
+      setMsg(`You win! ${cs} → ${nc} chips 🎉`);
       setPhase('result');
     } else if (net === 0) {
       // Push: chips returned
       chipsRef.current = cs;
       setChips(cs);
+      playPush();
       setMsg('Push — bet returned.');
       setPhase('result');
     } else {
@@ -360,6 +610,7 @@ export default function AllInBlackjack({
       const finalScore = usedLoan ? 0 : scoreRef.current;
       chipsRef.current = 0;
       setChips(0);
+      playLose();
       const label = usedLoan
         ? `Lost the loan. Score wiped — final: ${finalScore}`
         : `Dealer wins. Final score: ${finalScore} chips`;
@@ -387,7 +638,7 @@ export default function AllInBlackjack({
 
   return (
     <div className={styles.game}>
-      {/* Dealer area – top */}
+      <VolumeControl className={styles.volumeCtrl} />
       <div className={styles.section}>
         <div className={styles.sectionLabel}>
           Dealer
@@ -409,14 +660,18 @@ export default function AllInBlackjack({
             <div
               className={`${styles.betCoin} ${
                 coinAnimating ? styles.coinSlideIn : ''
-              }`}
+              } ${phase === 'result' ? styles.betCoinReturn : ''}`}
             >
+              <Coins size={22} weight='fill' className={styles.betCoinIcon} />
               <div className={styles.coinAmount}>{betAmount}</div>
-              <div className={styles.coinLabel}>bet</div>
+              <div className={styles.coinLabel}>
+                {phase === 'result' ? 'won' : 'bet'}
+              </div>
             </div>
           )}
           {doubleAnimating && (
             <div className={`${styles.betCoin} ${styles.doubleCoin}`}>
+              <Coins size={18} weight='fill' className={styles.betCoinIcon} />
               <div className={styles.coinAmount}>{chipsAtStartRef.current}</div>
               <div className={styles.coinLabel}>×2</div>
             </div>
@@ -430,7 +685,13 @@ export default function AllInBlackjack({
 
       {/* Player hands – bottom, above controls */}
       <div className={styles.section}>
-        <div className={styles.sectionLabel}>You</div>
+        <div className={styles.sectionLabel}>
+          You
+          <span className={styles.chipsDisplay}>
+            <Coins size={16} weight='fill' />
+            {chips}
+          </span>
+        </div>
         {hands.length === 0 ? (
           <div className={styles.emptyHint}>Press ALL IN to deal</div>
         ) : (
@@ -485,7 +746,10 @@ export default function AllInBlackjack({
             onClick={allIn}
             disabled={coinAnimating}
           >
-            ALL IN — {chips} chips
+            ALL IN
+            <span className={styles.allInChips}>
+              <Coins size={14} weight='fill' /> {chips}
+            </span>
           </button>
         )}
 

@@ -4,7 +4,7 @@
 
 ### Frontend — Vite + React + TypeScript
 
-Not Next.js. This is a fully authenticated, interactive SPA — there is no SEO benefit from SSR because game pages are behind a login and nobody is Googling individual leaderboard entries. Next.js would add build complexity, server component overhead, and routing constraints with zero upside. Vite gives a faster dev loop, simpler config, and a clean static output that deploys perfectly to Firebase Hosting.
+Not Next.js. This is a fully authenticated, interactive SPA — there is no SEO benefit from SSR because game pages are behind a login and nobody is Googling individual ladder entries. Next.js would add build complexity, server component overhead, and routing constraints with zero upside. Vite gives a faster dev loop, simpler config, and a clean static output that deploys perfectly to Firebase Hosting.
 
 ### Backend — Node.js + Fastify
 
@@ -12,11 +12,11 @@ Fastify over Express for three reasons:
 
 1. **JSON schema validation is built into every route.** Invalid request bodies are rejected before your handler runs. Response schemas strip undeclared fields automatically (security + performance).
 2. **Plugin scoping.** Decorators and hooks registered inside a plugin don't leak into unrelated routes. Eliminates entire categories of Express middleware bugs.
-3. **2–3x faster JSON serialization** via ahead-of-time schema compilation (ajv). Matters for leaderboard endpoints returning arrays of player objects.
+3. **2–3x faster JSON serialization** via ahead-of-time schema compilation (ajv). Matters for ladder endpoints returning arrays of player objects.
 
 ### Database — Cloud SQL (PostgreSQL)
 
-Leaderboard queries are simple `SELECT MAX(score) GROUP BY user_id ORDER BY score DESC` queries. PostgreSQL handles this at this scale with no special infrastructure. No Redis needed for MVP — add it later if query times degrade with large player counts. Cloud SQL gives managed backups, easy connection pooling via Cloud SQL Proxy, and first-class Cloud Run integration.
+Ladder queries are simple `SELECT MAX(score) GROUP BY user_id ORDER BY score DESC` queries. PostgreSQL handles this at this scale with no special infrastructure. No Redis needed for MVP — add it later if query times degrade with large player counts. Cloud SQL gives managed backups, easy connection pooling via Cloud SQL Proxy, and first-class Cloud Run integration.
 
 ### Frontend Hosting — Firebase Hosting
 
@@ -28,7 +28,7 @@ Email authentication is skipped intentionally. Users of an arcade ranking site u
 
 ### Real-time — Polling (no WebSockets)
 
-Leaderboards update when the user loads or refreshes the page. This is sufficient for a permanent ranked leaderboard model with no live competitions. No WebSocket server, no persistent connections, significantly simpler infrastructure.
+Ladders update when the user loads or refreshes the page. This is sufficient for a permanent ranked ladder model with no live competitions. No WebSocket server, no persistent connections, significantly simpler infrastructure.
 
 ---
 
@@ -159,7 +159,7 @@ CREATE INDEX scores_game_user_idx ON scores (game_id, user_id);
 CREATE INDEX scores_game_score_idx ON scores (game_id, score DESC);
 ```
 
-### Leaderboard queries (no separate table needed)
+### Ladder queries (no separate table needed)
 
 **Top 50 for a game:**
 
@@ -240,17 +240,17 @@ All routes are prefixed with `/api/v1`.
 
 ### Scores
 
-| Method | Route                         | Description                               |
-| ------ | ----------------------------- | ----------------------------------------- |
-| POST   | `/games/:slug/scores`         | Submit a score (auth required)            |
-| GET    | `/games/:slug/leaderboard`    | Top 50 players for game                   |
-| GET    | `/games/:slug/leaderboard/me` | Current user's rank + surrounding players |
+| Method | Route                    | Description                               |
+| ------ | ------------------------ | ----------------------------------------- |
+| POST   | `/games/:slug/scores`    | Submit a score (auth required)            |
+| GET    | `/games/:slug/ladder`    | Top 50 players for game                   |
+| GET    | `/games/:slug/ladder/me` | Current user's rank + surrounding players |
 
-### Leaderboard (overall)
+### Ladd (overall)
 
-| Method | Route              | Description                                   |
-| ------ | ------------------ | --------------------------------------------- |
-| GET    | `/leaderboard/top` | Top 10 overall players (for home page podium) |
+| Method | Route         | Description                                   |
+| ------ | ------------- | --------------------------------------------- |
+| GET    | `/ladder/top` | Top 10 overall players (for home page podium) |
 
 ---
 

@@ -153,7 +153,6 @@ export default function PatternMemory({
           const isLit = lit === idx;
           const isCorrect = correctSet.has(idx);
           const isWrong = wrongTile === idx;
-          const isNext = phase === 'input' && pattern[selected.length] === idx;
           return (
             <button
               key={idx}
@@ -162,7 +161,6 @@ export default function PatternMemory({
                 isLit ? styles.lit : '',
                 isCorrect ? styles.correct : '',
                 isWrong ? styles.wrong : '',
-                isNext && !isCorrect ? styles.next : '',
               ].join(' ')}
               style={
                 {

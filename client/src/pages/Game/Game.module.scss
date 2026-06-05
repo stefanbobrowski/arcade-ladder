@@ -104,10 +104,43 @@
   color: #f59e0b;
   font-weight: 700;
 }
+.rankTotal {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
 .xpResult {
   font-size: 1rem;
   color: #22c55e;
   font-weight: 600;
+}
+
+.recentScores {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+}
+.recentLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+}
+.recentList {
+  list-style: decimal;
+  padding: 0 0 0 1.2rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+.recentList li.recentBest {
+  color: #f59e0b;
+  font-weight: 700;
 }
 
 .loading {
@@ -124,13 +157,28 @@
   padding: 1.25rem;
 }
 
+.myRecentSection {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.myRecentTitle {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0 0 0.5rem;
+}
+
 .sidebarTitle {
   font-size: 1rem;
   font-weight: 700;
   margin: 0 0 1rem;
 }
 
-.leaderboardList {
+.ladderList {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -139,7 +187,7 @@
   gap: 0.4rem;
 }
 
-.leaderboardRow {
+.ladderRow {
   display: flex;
   align-items: center;
   gap: 0.6rem;

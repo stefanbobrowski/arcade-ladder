@@ -4,10 +4,10 @@ import { cache } from '../lib/cache';
 const TTL_60S = 60_000;
 const TTL_30S = 30_000;
 
-export const leaderboardRoutes: FastifyPluginAsync = async (fastify) => {
-  // GET /leaderboard/top — top 10 overall (for home page podium)
+export const ladderRoutes: FastifyPluginAsync = async (fastify) => {
+  // GET /ladder/top — top 10 overall (for home page podium)
   fastify.get('/top', async () => {
-    const cached = cache.get<unknown[]>('leaderboard:top');
+    const cached = cache.get<unknown[]>('ladder:top');
     if (cached) return cached;
 
     const { rows } = await fastify.db.query(
@@ -24,13 +24,13 @@ export const leaderboardRoutes: FastifyPluginAsync = async (fastify) => {
        ORDER BY total_score DESC
        LIMIT 10`
     );
-    cache.set('leaderboard:top', rows, TTL_60S);
+    cache.set('ladder:top', rows, TTL_60S);
     return rows;
   });
 
-  // GET /leaderboard/activity — recent events for live activity feed
+  // GET /ladder/activity — recent events for live activity feed
   fastify.get('/activity', async () => {
-    const cached = cache.get<unknown[]>('leaderboard:activity');
+    const cached = cache.get<unknown[]>('ladder:activity');
     if (cached) return cached;
 
     const { rows } = await fastify.db.query(
@@ -54,13 +54,13 @@ export const leaderboardRoutes: FastifyPluginAsync = async (fastify) => {
        ORDER BY s.created_at DESC
        LIMIT 50`
     );
-    cache.set('leaderboard:activity', rows, TTL_30S);
+    cache.set('ladder:activity', rows, TTL_30S);
     return rows;
   });
 
-  // GET /leaderboard/stats — site-wide stat cards
+  // GET /ladder/stats — site-wide stat cards
   fastify.get('/stats', async () => {
-    const cached = cache.get<unknown>('leaderboard:stats');
+    const cached = cache.get<unknown>('ladder:stats');
     if (cached) return cached;
 
     const { rows } = await fastify.db.query(
@@ -70,7 +70,7 @@ export const leaderboardRoutes: FastifyPluginAsync = async (fastify) => {
          (SELECT COUNT(*) FROM games WHERE is_active = TRUE)::int AS games_available,
          (SELECT COUNT(DISTINCT user_id) FROM scores WHERE created_at > NOW() - INTERVAL '24 hours')::int AS active_today`
     );
-    cache.set('leaderboard:stats', rows[0], TTL_30S);
+    cache.set('ladder:stats', rows[0], TTL_30S);
     return rows[0];
   });
 };

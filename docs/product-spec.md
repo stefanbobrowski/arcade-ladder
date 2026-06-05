@@ -2,7 +2,7 @@
 
 ## Overview
 
-Arcade Ladder is a browser-based arcade platform. Players create an account, play simple skill-based games built with web UI (no canvas, no WebGL — just styled divs and JavaScript state), and compete on permanent per-game leaderboards. Rankings are earned, never purchased. The primary motivation loop is climbing from rank #500 → #100 → #10 → #1 in any given game.
+Arcade Ladder is a browser-based arcade platform. Players create an account, play simple skill-based games built with web UI (no canvas, no WebGL — just styled divs and JavaScript state), and compete on permanent per-game ladders. Rankings are earned, never purchased. The primary motivation loop is climbing from rank #500 → #100 → #10 → #1 in any given game.
 
 ---
 
@@ -29,7 +29,7 @@ Arcade Ladder is a browser-based arcade platform. Players create an account, pla
 
 The social proof and energy page. Goal: make the site feel active and alive.
 
-**Leaderboard Podium**
+**Ladder Podium**
 
 - Top 3 players by combined total score across all games
 - Card layout: #1 center (larger), #2 left, #3 right
@@ -78,12 +78,12 @@ The social proof and energy page. Goal: make the site feel active and alive.
 
 ### 3. Game / Play Page (`/games/:slug`)
 
-The core experience. A fixed-size responsive game container with a live leaderboard sidebar.
+The core experience. A fixed-size responsive game container with a live ladder sidebar.
 
 **Layout**
 
 - Left/center: game container (responsive square, max ~600px)
-- Right sidebar: Top Players leaderboard (desktop only — collapses on mobile, accessible via tab)
+- Right sidebar: Top Players ladder (desktop only — collapses on mobile, accessible via tab)
 
 **Game Container Header**
 
@@ -110,11 +110,11 @@ The core experience. A fixed-size responsive game container with a live leaderbo
 **Post-Game State**
 
 - Overlay on game container showing: Your Score, Your Rank (updated), XP earned
-- Buttons: Play Again, View Leaderboard, Back to Games
+- Buttons: Play Again, View Ladder, Back to Games
 
 ---
 
-### 4. Leaderboard (`/leaderboard`)
+### 4. Ladder (`/ladder`)
 
 Full ranking view per game. Gives the competitive depth that the game page sidebar can't show.
 
@@ -123,7 +123,7 @@ Full ranking view per game. Gives the competitive depth that the game page sideb
 - Horizontal scrollable tabs or dropdown: one tab per game
 - Defaults to first game (or most-played)
 
-**Per-Game Leaderboard Table**
+**Per-Game Ladder Table**
 
 - Shows top 50 players for selected game
 - Columns: Rank, Player (avatar + username), Best Score, # Plays, Percentile
@@ -191,7 +191,7 @@ The host (game page) handles:
 
 - Score is submitted only on `onGameOver` — not during play
 - A retry counts as a new score submission (total play count increments)
-- Best score is what appears on leaderboards — all scores are stored but only `MAX(score)` is ranked
+- Best score is what appears on ladders — all scores are stored but only `MAX(score)` is ranked
 - Score must be a non-negative integer
 
 ### What makes a valid Arcade Ladder game
@@ -255,7 +255,7 @@ Level thresholds follow a curve (0 → 100 → 250 → 500 → 1,000 → 2,500 �
 **Top navigation bar (always visible)**
 
 - Left: Logo / site name "Arcade Ladder" — links to `/`
-- Center links: Hub | Games | Leaderboard | Play (context-aware, highlights active page)
+- Center links: Hub | Games | Ladder | Play (context-aware, highlights active page)
 - Right: XP display (star icon + number) + avatar circle (links to own profile) — when logged in
 - Right: Sign In button — when logged out
 
@@ -282,7 +282,7 @@ Based on provided Figma mockups.
 - Achievements / badge system
 - Dedicated "About" page with parallax scroll
 - Custom profile picture upload (requires Cloud Storage)
-- Redis caching for leaderboards at scale
+- Redis caching for ladders at scale
 - Weekly featured game or spotlight
 - Social sharing (shareable profile card image)
 - Admin dashboard for adding/toggling games

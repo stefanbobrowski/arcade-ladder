@@ -1,10 +1,8 @@
 # Arcade Ladder 🎮
 
-Trigger Build: Ye
+> A web-based arcade platform where every game has a ladder and every player has a rank.
 
-> A web-based arcade platform where every game has a leaderboard and every player has a rank.
-
-Play simple browser-based games, compete on permanent per-game leaderboards, and climb the overall rankings. No seasons, no paywalls — just skill and repetition.
+Play simple browser-based games, compete on permanent per-game ladders, and climb the overall rankings. No seasons, no paywalls — just skill and repetition.
 
 **Live site:** arcadeladder.com _(in development)_
 
@@ -27,13 +25,13 @@ Play simple browser-based games, compete on permanent per-game leaderboards, and
 
 ## Pages
 
-| Page          | Route                | Description                                              |
-| ------------- | -------------------- | -------------------------------------------------------- |
-| Home / Hub    | `/`                  | Top 3 podium, site stats, live activity feed             |
-| Games Gallery | `/games`             | Grid of all playable games with your rank per game       |
-| Game (Play)   | `/games/:slug`       | Play the game, score tracking, game-specific leaderboard |
-| Leaderboard   | `/leaderboard`       | Full top-50 rankings per game with game selector         |
-| Profile       | `/profile/:username` | Player stats, all game rankings, recent XP               |
+| Page          | Route                | Description                                          |
+| ------------- | -------------------- | ---------------------------------------------------- |
+| Home / Hub    | `/`                  | Top 3 podium, site stats, live activity feed         |
+| Games Gallery | `/games`             | Grid of all playable games with your rank per game   |
+| Game (Play)   | `/games/:slug`       | Play the game, score tracking, game-specific ladders |
+| Ladder        | `/ladder`            | Full top-50 rankings per game with game selector     |
+| Profile       | `/profile/:username` | Player stats, all game rankings, recent XP           |
 
 ---
 
@@ -96,7 +94,7 @@ psql -U postgres -c "CREATE DATABASE arcadeladder;"
 psql -U postgres -d arcadeladder -f server/src/db/migrations/001_init.sql
 ```
 
-The migration creates all tables and inserts 3 seed users + scores across 3 games so leaderboards are never empty during development.
+The migration creates all tables and inserts 3 seed users + scores across 3 games so ladders are never empty during development.
 
 #### Reseed local database (wipe scores + seed users, re-insert)
 

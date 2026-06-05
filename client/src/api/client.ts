@@ -2,16 +2,19 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1',
-  withCredentials: true,
+  withCredentials: true, // sends the HttpOnly arcade_token cookie automatically
 });
 
-// Attach JWT from memory on every request
-api.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem('arcade_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// When the server returns 401, the token has expired or is invalid.
+// Dispatch a custom event so AuthContext can clear the user state.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      window.dispatchEvent(new Event('arcade:unauthorized'));
+    }
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 export default api;

@@ -28,6 +28,66 @@
   }
 }
 
+.levelBadge {
+  position: absolute;
+  top: 1.3rem;
+  right: 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  pointer-events: none;
+}
+
+.scoreDisplay {
+  position: absolute;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 2.5rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+  letter-spacing: -0.02em;
+}
+
+.levelUpBanner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(99, 102, 241, 0.9);
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 800;
+  padding: 0.6rem 1.8rem;
+  border-radius: 0.75rem;
+  pointer-events: none;
+  z-index: 20;
+  animation: fadeInOut 0.9s ease-in-out forwards;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+}
+
 .scoreboard {
   display: flex;
   align-items: center;

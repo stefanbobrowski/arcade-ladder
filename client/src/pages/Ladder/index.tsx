@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/client';
-import type { Game, LeaderboardEntry, OverallEntry } from '../../types';
+import type { Game, LadderEntry, OverallEntry } from '../../types';
 import Avatar from '../../components/ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
 import { MedalIcon } from '@phosphor-icons/react';
-import styles from './Leaderboard.module.scss';
+import styles from './Ladder.module.scss';
 
 const OVERALL = '__overall__';
 
@@ -19,7 +19,7 @@ export default function Ladder() {
   const { user } = useAuth();
   const [games, setGames] = useState<Game[]>([]);
   const [selectedSlug, setSelectedSlug] = useState(OVERALL);
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [entries, setEntries] = useState<LadderEntry[]>([]);
   const [overallEntries, setOverallEntries] = useState<OverallEntry[]>([]);
   const [myEntry, setMyEntry] = useState<{
     rank: number;
@@ -35,16 +35,16 @@ export default function Ladder() {
     if (!selectedSlug) return;
     if (selectedSlug === OVERALL) {
       api
-        .get<OverallEntry[]>('/leaderboard/top')
+        .get<OverallEntry[]>('/ladder/top')
         .then((r) => setOverallEntries(r.data));
       return;
     }
     api
-      .get<LeaderboardEntry[]>(`/games/${selectedSlug}/leaderboard`)
+      .get<LadderEntry[]>(`/games/${selectedSlug}/ladder`)
       .then((r) => setEntries(r.data));
     if (user) {
       api
-        .get(`/games/${selectedSlug}/leaderboard/me`)
+        .get(`/games/${selectedSlug}/ladder/me`)
         .then((r) => setMyEntry(r.data))
         .catch(() => setMyEntry(null));
     }
@@ -154,7 +154,7 @@ export default function Ladder() {
         </table>
       </div>
 
-      {/* Pinned row when user is outside top 50 on a game leaderboard */}
+      {/* Pinned row when user is outside top 50 on a game ladder */}
       {!isOverall && user && myEntry && !isInTop50 && (
         <div className={styles.myPosition}>
           You are ranked <strong>#{myEntry.rank}</strong> out of{' '}

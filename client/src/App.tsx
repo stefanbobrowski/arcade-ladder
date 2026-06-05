@@ -4,7 +4,7 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Games from './pages/Games';
 import Game from './pages/Game';
-import Leaderboard from './pages/Leaderboard';
+import Ladder from './pages/Ladder';
 import Profile from './pages/Profile';
 import About from './pages/About';
 import NotFound from './pages/NotFound';
@@ -18,7 +18,7 @@ function App() {
             <Route path='/' element={<Home />} />
             <Route path='/arcade' element={<Games />} />
             <Route path='/games/:slug' element={<Game />} />
-            <Route path='/ladder' element={<Leaderboard />} />
+            <Route path='/ladder' element={<Ladder />} />
             <Route path='/profile/:username' element={<Profile />} />
             <Route path='/about' element={<About />} />
             <Route path='*' element={<NotFound />} />

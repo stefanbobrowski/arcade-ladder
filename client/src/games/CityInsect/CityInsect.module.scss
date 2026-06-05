@@ -1,0 +1,100 @@
+.game {
+  position: relative;
+  width: 100%;
+  min-height: 540px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.5rem 0.5rem;
+  user-select: none;
+}
+
+.hud {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 480px;
+  justify-content: space-between;
+}
+
+.timerBadge {
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+  min-width: 3.5rem;
+  text-align: center;
+
+  &.urgent {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.22);
+    animation: pulse 0.55s ease-in-out infinite alternate;
+  }
+}
+
+.lvlBadge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.18);
+  color: #a5b4fc;
+  text-align: center;
+  flex: 1;
+}
+
+.xpBar {
+  height: 3px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 480px;
+  margin-top: -0.2rem;
+}
+
+.xpFill {
+  height: 100%;
+  background: #6366f1;
+  border-radius: 2px;
+  transition: width 0.12s ease;
+}
+
+.scoreBadge {
+  font-size: 1rem;
+  font-weight: 800;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.85);
+  min-width: 5rem;
+  text-align: right;
+}
+
+.canvas {
+  border-radius: 10px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.hint {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.25);
+  text-align: center;
+  margin: 0;
+}
+
+@keyframes pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}

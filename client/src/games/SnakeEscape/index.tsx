@@ -1,14 +1,22 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { GameProps } from '../../types';
 import styles from './SnakeEscape.module.scss';
 
-const GRID = 10;
-const CELL = 30;
-const PAD = 50;
+const GRID = 8;
+const CELL = 44;
+const PAD = 36;
+const THICKNESS = 14; // snake body thickness in px
 const SVG_SIZE = PAD * 2 + GRID * CELL;
 const GAME_DURATION = 30;
 const EXIT_STEP_MS = 80;
-const MIN_SNAKES = 4; // always keep at least this many on the board
+
+const LEVEL_CONFIG = [
+  { snakeCount: 7, minLen: 2, maxLen: 3 },
+  { snakeCount: 9, minLen: 2, maxLen: 4 },
+  { snakeCount: 11, minLen: 2, maxLen: 5 },
+  { snakeCount: 13, minLen: 2, maxLen: 6 },
+  { snakeCount: 15, minLen: 2, maxLen: 7 },
+] as const;
 
 const SNAKE_COLORS = [
   '#6366f1',
@@ -138,16 +146,18 @@ function placeSnakes(
   count: number,
   grid: (number | null)[][],
   startId: number,
-  colorOffset: number
+  colorOffset: number,
+  minLen = 2,
+  maxLen = 4
 ): Snake[] {
   const g = grid.map((row) => [...row]);
   const placed: Snake[] = [];
   let id = startId;
   let attempts = 0;
-  while (placed.length < count && attempts < 500) {
+  while (placed.length < count && attempts < 600) {
     attempts++;
     const horiz = Math.random() < 0.5;
-    const len = 3 + Math.floor(Math.random() * 4); // 3–6
+    const len = minLen + Math.floor(Math.random() * (maxLen - minLen + 1));
     let cells: [number, number][];
     if (horiz) {
       const r = Math.floor(Math.random() * GRID);
@@ -184,12 +194,75 @@ function placeSnakes(
   return placed;
 }
 
+// BFS solvability: can all snakes escape (in some order)?
+function isSolvable(snakes: Snake[]): boolean {
+  const n = snakes.length;
+  if (n === 0) return true;
+  const goal = (1 << n) - 1;
+  const queue: number[] = [0];
+  const visited = new Set<number>([0]);
+  while (queue.length > 0) {
+    const mask = queue.shift()!;
+    if (mask === goal) return true;
+    for (let i = 0; i < n; i++) {
+      if ((mask >> i) & 1) continue; // already escaped
+      // Grid with only the non-escaped snakes except snake i
+      const active = snakes.filter((_, j) => j !== i && !((mask >> j) & 1));
+      const g = buildGrid(active);
+      if (checkMove(snakes[i], g) === 'escape') {
+        const newMask = mask | (1 << i);
+        if (!visited.has(newMask)) {
+          visited.add(newMask);
+          queue.push(newMask);
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function generatePuzzle(
+  config: { snakeCount: number; minLen: number; maxLen: number },
+  startId: number,
+  colorOffset: number
+): Snake[] {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const emptyGrid: (number | null)[][] = Array.from({ length: GRID }, () =>
+      Array(GRID).fill(null)
+    );
+    const snakes = placeSnakes(
+      config.snakeCount,
+      emptyGrid,
+      startId,
+      colorOffset,
+      config.minLen,
+      config.maxLen
+    );
+    if (snakes.length >= config.snakeCount && isSolvable(snakes)) {
+      return snakes;
+    }
+  }
+  // fallback
+  const emptyGrid: (number | null)[][] = Array.from({ length: GRID }, () =>
+    Array(GRID).fill(null)
+  );
+  return placeSnakes(
+    config.snakeCount,
+    emptyGrid,
+    startId,
+    colorOffset,
+    config.minLen,
+    config.maxLen
+  );
+}
+
 // Renders body + connectors + head decorations for one snake
 function SnakeShape({
   snake,
   glowFilter,
   cursor,
   opacity,
+  shaking,
   onClick,
   onMouseEnter,
   onMouseLeave,
@@ -198,6 +271,7 @@ function SnakeShape({
   glowFilter: string;
   cursor: string;
   opacity: number;
+  shaking?: boolean;
   onClick?: () => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
@@ -213,6 +287,7 @@ function SnakeShape({
 
   return (
     <g
+      className={shaking ? styles.blocked : undefined}
       style={{ cursor, opacity, filter: glowFilter, transition: 'filter 0.1s' }}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
@@ -221,29 +296,41 @@ function SnakeShape({
       {/* Body cells */}
       {snake.cells.map(([r, c], idx) => {
         const isHead = r === head[0] && c === head[1];
+        const isH = snake.dir === 'left' || snake.dir === 'right';
+        const rx_ = isHead ? 8 : 6;
+        // Horizontal snake: full cell width, thin centered height
+        // Vertical snake:   thin centered width, full cell height
+        const x = isH
+          ? PAD + c * CELL
+          : PAD + c * CELL + (CELL - THICKNESS) / 2;
+        const y = isH
+          ? PAD + r * CELL + (CELL - THICKNESS) / 2
+          : PAD + r * CELL;
+        const w = isH ? CELL : THICKNESS;
+        const h = isH ? THICKNESS : CELL;
         return (
           <rect
             key={idx}
-            x={PAD + c * CELL + 4}
-            y={PAD + r * CELL + 4}
-            width={CELL - 8}
-            height={CELL - 8}
-            rx={isHead ? 12 : 8}
+            x={x}
+            y={y}
+            width={w}
+            height={h}
+            rx={rx_}
             fill={snake.color}
-            opacity={isHead ? 1 : 0.7}
+            opacity={isHead ? 1 : 0.75}
           />
         );
       })}
 
       {/* Connector bridges between adjacent cells */}
-      {snake.cells.slice(0, -1).map(([r, c], idx) => {
+      {/* {snake.cells.slice(0, -1).map(([r, c], idx) => {
         const isH = r === snake.cells[idx + 1][0];
         return isH ? (
           <rect
             key={`br-${idx}`}
             x={PAD + (c + 1) * CELL - 4}
             y={PAD + r * CELL + 4}
-            width={8}
+            width={4}
             height={CELL - 8}
             fill={snake.color}
             opacity={0.7}
@@ -254,12 +341,12 @@ function SnakeShape({
             x={PAD + c * CELL + 4}
             y={PAD + (r + 1) * CELL - 4}
             width={CELL - 8}
-            height={8}
+            height={4}
             fill={snake.color}
             opacity={0.7}
           />
         );
-      })}
+      })} */}
 
       {/* Eyes */}
       <circle cx={eye1[0]} cy={eye1[1]} r={eyeR} fill='white' />
@@ -288,45 +375,57 @@ export default function SnakeEscape({
   const [timeLeft, setTimeLeft] = useState(GAME_DURATION);
   const [snakes, setSnakes] = useState<Snake[]>([]);
   const [score, setScore] = useState(0);
+  const [level, setLevel] = useState(0);
   const [hoverId, setHoverId] = useState<number | null>(null);
-  const [flash, setFlash] = useState<'good' | 'bad' | null>(null);
+  const [flash, setFlash] = useState<'good' | null>(null);
+  const [blockedId, setBlockedId] = useState<number | null>(null);
   const [exitingSnakes, setExitingSnakes] = useState<Snake[]>([]);
-  const [gameEnded, setGameEnded] = useState(false);
 
   const scoreRef = useRef(0);
-  const exitedRef = useRef(0);
+  const levelRef = useRef(0);
   const snakeIdRef = useRef(0);
   const colorOffsetRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exitIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lockedRef = useRef(false);
-  // Ref mirror of snakes so setTimeout callbacks read latest state
   const snakesRef = useRef<Snake[]>([]);
   snakesRef.current = snakes;
 
-  const buildInitial = useCallback(() => {
-    const emptyGrid: (number | null)[][] = Array.from({ length: GRID }, () =>
-      Array(GRID).fill(null)
+  function loadLevel(lvl: number) {
+    const config = LEVEL_CONFIG[Math.min(lvl, LEVEL_CONFIG.length - 1)];
+    const puzzle = generatePuzzle(
+      config,
+      snakeIdRef.current,
+      colorOffsetRef.current
     );
-    snakeIdRef.current = 0;
-    exitedRef.current = 0;
-    colorOffsetRef.current = 0;
-    const initial = placeSnakes(8, emptyGrid, 0, 0);
-    snakeIdRef.current = initial.length;
-    return initial;
-  }, []);
+    snakeIdRef.current += puzzle.length;
+    colorOffsetRef.current += puzzle.length;
+    setLevel(lvl);
+    levelRef.current = lvl;
+    setSnakes(puzzle);
+    setHoverId(null);
+    lockedRef.current = false;
+  }
 
   useEffect(() => {
     if (isPlaying) {
       scoreRef.current = 0;
+      levelRef.current = 0;
+      snakeIdRef.current = 0;
+      colorOffsetRef.current = 0;
       lockedRef.current = false;
       setScore(0);
+      setLevel(0);
       setTimeLeft(GAME_DURATION);
       setFlash(null);
-      setGameEnded(false);
+      setBlockedId(null);
       setExitingSnakes([]);
       setHoverId(null);
-      setSnakes(buildInitial());
+      const config = LEVEL_CONFIG[0];
+      const puzzle = generatePuzzle(config, 0, 0);
+      snakeIdRef.current = puzzle.length;
+      colorOffsetRef.current = puzzle.length;
+      setSnakes(puzzle);
       if (exitIntervalRef.current) {
         clearInterval(exitIntervalRef.current);
         exitIntervalRef.current = null;
@@ -339,7 +438,7 @@ export default function SnakeEscape({
       }
       setExitingSnakes([]);
     }
-  }, [isPlaying, buildInitial]);
+  }, [isPlaying]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -357,10 +456,8 @@ export default function SnakeEscape({
     if (timeLeft === 0 && isPlaying) onGameOver(scoreRef.current);
   }, [timeLeft, isPlaying, onGameOver]);
 
-  // Starts sliding a snake off the grid one cell at a time
   function startExitAnimation(snake: Snake) {
     setExitingSnakes((prev) => [...prev, snake]);
-
     if (exitIntervalRef.current === null) {
       exitIntervalRef.current = setInterval(() => {
         setExitingSnakes((prev) => {
@@ -370,14 +467,12 @@ export default function SnakeEscape({
               const newCells = s.cells.map(
                 ([r, c]) => [r + dr, c + dc] as [number, number]
               );
-              // Keep animating while any cell is still near the visible area
               const anyVisible = newCells.some(
                 ([r, c]) => r > -2 && r < GRID + 2 && c > -2 && c < GRID + 2
               );
               return anyVisible ? { ...s, cells: newCells } : null;
             })
             .filter(Boolean) as Snake[];
-
           if (next.length === 0) {
             clearInterval(exitIntervalRef.current!);
             exitIntervalRef.current = null;
@@ -389,78 +484,59 @@ export default function SnakeEscape({
   }
 
   function handleSnakeClick(snakeId: number) {
-    if (!isPlaying || lockedRef.current || gameEnded) return;
+    if (!isPlaying || lockedRef.current) return;
     const snake = snakesRef.current.find((s) => s.id === snakeId);
     if (!snake) return;
 
-    lockedRef.current = true;
     const grid = buildGrid(snakesRef.current);
-    // Clear the snake's own cells so it doesn't block itself
     for (const [r, c] of snake.cells) grid[r][c] = null;
 
     if (checkMove(snake, grid) === 'escape') {
+      lockedRef.current = true;
       setFlash('good');
-      const pts = snake.cells.length * 10;
+      const pts = 50 + snake.cells.length * 10;
       scoreRef.current += pts;
       setScore(scoreRef.current);
       onScoreUpdate(scoreRef.current);
 
-      // Remove from active board immediately; animate it sliding out
       setSnakes((prev) => prev.filter((s) => s.id !== snakeId));
       startExitAnimation(snake);
 
       setTimeout(() => {
         setFlash(null);
-        exitedRef.current++;
-        // snakesRef.current reflects the board AFTER the escaped snake was removed
         const remaining = snakesRef.current;
-        let nextSnakes = remaining;
-
-        // Spawn every 3 escapes OR whenever the board drops below MIN_SNAKES
-        const needsRefill = nextSnakes.length < MIN_SNAKES;
-        if (exitedRef.current % 3 === 0 || needsRefill) {
-          const newGrid = buildGrid(remaining);
-          colorOffsetRef.current += 2;
-          const spawnCount = needsRefill
-            ? Math.max(2, MIN_SNAKES - nextSnakes.length + 2)
-            : 2;
-          const spawned = placeSnakes(
-            spawnCount,
-            newGrid,
-            snakeIdRef.current,
-            colorOffsetRef.current
+        if (remaining.length === 0) {
+          // Level complete: award time bonus, advance level
+          const timePts = Math.floor(
+            (timeLeft > 0 ? timeLeft : 0) * (levelRef.current + 1) * 2
           );
-          snakeIdRef.current += spawned.length;
-          nextSnakes = [...remaining, ...spawned];
+          scoreRef.current += timePts;
+          setScore(scoreRef.current);
+          onScoreUpdate(scoreRef.current);
+          loadLevel(levelRef.current + 1);
+        } else {
+          lockedRef.current = false;
         }
-        setSnakes(nextSnakes);
-        lockedRef.current = false;
       }, 400);
     } else {
-      // Collision → game over
-      setFlash('bad');
-      setGameEnded(true);
-      if (timerRef.current) clearInterval(timerRef.current);
-      setTimeout(() => onGameOver(scoreRef.current), 900);
+      // Blocked — shake, no game over
+      setBlockedId(snakeId);
+      setTimeout(() => setBlockedId(null), 500);
     }
   }
 
-  // Compute hover preview (escape = green glow, blocked = red glow)
+  // Hover preview
   const hoverSnake =
     hoverId !== null ? (snakes.find((s) => s.id === hoverId) ?? null) : null;
   let hoverResult: 'escape' | 'blocked' | null = null;
-  if (hoverSnake && isPlaying && !gameEnded) {
+  if (hoverSnake && isPlaying) {
     const g = buildGrid(snakes);
     for (const [r, c] of hoverSnake.cells) g[r][c] = null;
     hoverResult = checkMove(hoverSnake, g);
   }
 
   const urgentTime = timeLeft <= 10;
-  const gameClass = [
-    styles.game,
-    flash === 'good' ? styles.flashGood : null,
-    flash === 'bad' ? styles.flashBad : null,
-  ]
+  const gameClass = [styles.game, flash === 'good' ? styles.flashGood : null]
     .filter(Boolean)
     .join(' ');
 
@@ -473,6 +549,7 @@ export default function SnakeEscape({
       >
         {timeLeft}s
       </div>
+      <div className={styles.levelBadge}>Level {level + 1}</div>
       <div className={styles.score}>{score}</div>
 
       <div className={styles.svgWrap}>
@@ -481,7 +558,7 @@ export default function SnakeEscape({
           className={styles.svg}
           onMouseLeave={() => setHoverId(null)}
         >
-          {/* Grid background dots */}
+          {/* Grid background cells */}
           {Array.from({ length: GRID }, (_, r) =>
             Array.from({ length: GRID }, (_, c) => (
               <rect
@@ -496,7 +573,7 @@ export default function SnakeEscape({
             ))
           )}
 
-          {/* Snakes exiting (rendered below active snakes) */}
+          {/* Exiting snakes */}
           {exitingSnakes.map((snake) => (
             <SnakeShape
               key={`exit-${snake.id}`}
@@ -516,14 +593,14 @@ export default function SnakeEscape({
                 : isHovered && hoverResult === 'blocked'
                   ? 'drop-shadow(0 0 7px #ef4444)'
                   : 'none';
-
             return (
               <SnakeShape
                 key={snake.id}
                 snake={snake}
                 glowFilter={glowFilter}
-                cursor={isPlaying && !gameEnded ? 'pointer' : 'default'}
+                cursor={isPlaying ? 'pointer' : 'default'}
                 opacity={1}
+                shaking={blockedId === snake.id}
                 onClick={() => handleSnakeClick(snake.id)}
                 onMouseEnter={() => setHoverId(snake.id)}
                 onMouseLeave={() => setHoverId(null)}
@@ -536,9 +613,7 @@ export default function SnakeEscape({
       <p className={styles.hint}>
         {!isPlaying
           ? ''
-          : gameEnded
-            ? '💥 Collision — game over!'
-            : 'Click a snake to launch it — green = safe, red = collision'}
+          : 'Click a snake to launch it — green = safe, red = blocked'}
       </p>
     </div>
   );

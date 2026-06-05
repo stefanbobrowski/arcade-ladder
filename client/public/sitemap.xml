@@ -41,7 +41,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://arcade-ladder.web.app/leaderboard</loc>
+    <loc>https://arcade-ladder.web.app/ladder</loc>
     <changefreq>hourly</changefreq>
     <priority>0.7</priority>
   </url>

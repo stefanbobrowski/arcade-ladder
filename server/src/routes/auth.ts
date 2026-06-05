@@ -47,7 +47,16 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       avatarUrl: profile.picture,
     });
     const token = fastify.jwt.sign({ sub: user.id, username: user.username });
-    reply.redirect(`${process.env.CLIENT_ORIGIN}?token=${token}`);
+    const isProd = process.env.NODE_ENV === 'production';
+    reply
+      .setCookie('arcade_token', token, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+      .redirect(process.env.CLIENT_ORIGIN!);
   });
 
   // ── GitHub OAuth ───────────────────────────────────────────────────────────
@@ -110,7 +119,16 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
       avatarUrl: profile.avatar_url,
     });
     const token = fastify.jwt.sign({ sub: user.id, username: user.username });
-    reply.redirect(`${process.env.CLIENT_ORIGIN}?token=${token}`);
+    const isProd = process.env.NODE_ENV === 'production';
+    reply
+      .setCookie('arcade_token', token, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+      .redirect(process.env.CLIENT_ORIGIN!);
   });
 
   // ── Session ────────────────────────────────────────────────────────────────
@@ -137,8 +155,7 @@ export const authRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   fastify.post('/logout', async (_request, reply) => {
-    // JWT is stateless — client just drops the token
-    reply.send({ success: true });
+    reply.clearCookie('arcade_token', { path: '/' }).send({ success: true });
   });
 };
 
@@ -156,11 +173,40 @@ async function upsertUser(
     avatarUrl: string;
   }
 ) {
+  // 1. Exact match on OAuth provider + ID (returning user, same provider)
+  const { rows: byOauth } = await db.query<{ id: string; username: string }>(
+    'SELECT id, username FROM users WHERE oauth_provider = $1 AND oauth_id = $2',
+    [data.oauthProvider, data.oauthId]
+  );
+  if (byOauth[0]) {
+    // Keep avatar fresh
+    await db.query('UPDATE users SET avatar_url = $1 WHERE id = $2', [
+      data.avatarUrl,
+      byOauth[0].id,
+    ]);
+    return byOauth[0];
+  }
+
+  // 2. Same email, different OAuth provider (e.g. Google then GitHub)
+  //    Link the new provider to the existing account
+  if (data.email) {
+    const { rows: byEmail } = await db.query<{ id: string; username: string }>(
+      'SELECT id, username FROM users WHERE email = $1',
+      [data.email]
+    );
+    if (byEmail[0]) {
+      await db.query(
+        'UPDATE users SET oauth_provider = $1, oauth_id = $2, avatar_url = $3 WHERE id = $4',
+        [data.oauthProvider, data.oauthId, data.avatarUrl, byEmail[0].id]
+      );
+      return byEmail[0];
+    }
+  }
+
+  // 3. Brand-new user
   const { rows } = await db.query<{ id: string; username: string }>(
     `INSERT INTO users (oauth_provider, oauth_id, email, username, avatar_url)
      VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (oauth_provider, oauth_id)
-     DO UPDATE SET avatar_url = EXCLUDED.avatar_url
      RETURNING id, username`,
     [
       data.oauthProvider,

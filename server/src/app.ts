@@ -8,7 +8,7 @@ import { authRoutes } from './routes/auth';
 import { userRoutes } from './routes/users';
 import { gameRoutes } from './routes/games';
 import { scoreRoutes } from './routes/scores';
-import { leaderboardRoutes } from './routes/leaderboard';
+import { ladderRoutes } from './routes/ladder';
 
 export async function buildApp() {
   const app = Fastify({
@@ -31,7 +31,11 @@ export async function buildApp() {
 
   await app.register(jwt, {
     secret: process.env.JWT_SECRET ?? 'change-me-in-production',
-    sign: { expiresIn: '1h' },
+    sign: { expiresIn: '7d' },
+    cookie: {
+      cookieName: 'arcade_token',
+      signed: false,
+    },
   });
 
   await app.register(dbPlugin);
@@ -42,7 +46,7 @@ export async function buildApp() {
   await app.register(userRoutes, { prefix: '/api/v1/users' });
   await app.register(gameRoutes, { prefix: '/api/v1/games' });
   await app.register(scoreRoutes, { prefix: '/api/v1/games' });
-  await app.register(leaderboardRoutes, { prefix: '/api/v1/leaderboard' });
+  await app.register(ladderRoutes, { prefix: '/api/v1/ladder' });
 
   // ── Health check ───────────────────────────────────────────────────────────
 

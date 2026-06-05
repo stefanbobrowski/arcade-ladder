@@ -5,6 +5,7 @@ import {
   GhostIcon,
   EnvelopeSimpleIcon,
   CrosshairIcon,
+  BrowserIcon,
 } from '@phosphor-icons/react';
 import styles from './About.module.scss';
 
@@ -26,7 +27,11 @@ export default function About() {
         <h2 className={styles.sectionHeading}>What is Arcade Ladder?</h2>
         <p>
           Arcade Ladder is a collection of fast, browser-based mini-games with a
-          shared leaderboard. Compete across an evolving list of games, such as{' '}
+          shared ladder.
+        </p>
+        <p>
+          {' '}
+          Compete across an evolving list of games, such as{' '}
           <Link to='/games/typing-speed' className={styles.link}>
             Typing Speed
           </Link>
@@ -43,8 +48,8 @@ export default function About() {
             profile
           </Link>{' '}
           XP, and high-scores earn your spot on the global{' '}
-          <Link to='/leaderboard' className={styles.link}>
-            leaderboard
+          <Link to='/ladder' className={styles.link}>
+            ladder
           </Link>
           !
         </p>
@@ -91,14 +96,15 @@ export default function About() {
         <h2 className={styles.sectionHeading}>Submit Bugs or Feedback</h2>
         <p>Please report any issues or bugs you encounter while gaming.</p>
         <p>
-          Please share your thoughts, feedback, or suggestions to help us
-          improve the platform.
+          Please share your thoughts, feedback, or suggestions to help improve
+          the platform.
         </p>
         <p>
           <a
             href='mailto:stefanbobrowski1@gmail.com'
             className={styles.emailLink}
           >
+            <EnvelopeSimpleIcon size={20} weight='bold' />
             stefanbobrowski1@gmail.com
           </a>
         </p>
@@ -115,13 +121,21 @@ export default function About() {
           advertising, sponsoring, or have any business inquiries related to
           Arcade Ladder.
         </p>
-
         <a
           href='mailto:stefanbobrowski1@gmail.com'
           className={styles.emailLink}
         >
           <EnvelopeSimpleIcon size={20} weight='bold' />
           stefanbobrowski1@gmail.com
+        </a>
+        <a
+          href='https://stefanbobrowski.com'
+          className={styles.emailLink}
+          target='_blank'
+          rel='noopener noreferrer'
+        >
+          <BrowserIcon size={20} weight='bold' />
+          stefanbobrowski.com
         </a>
       </section>
 

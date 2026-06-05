@@ -66,8 +66,8 @@ const EMOJI_POOL = ['🎈', '🎈', '🎈', '🎈', '🎈', '🎈', '⚫', '⚫'
 
 const BALLOON_POINTS: Record<string, number> = {
   '🎈': 10,
-  '⚫': -10,
-  '🎁': 40,
+  '⚫': -20,
+  '🎁': 30,
 };
 
 function randomEmoji() {

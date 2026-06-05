@@ -28,7 +28,7 @@ export interface Score {
   created_at: string;
 }
 
-export interface LeaderboardEntry {
+export interface LadderEntry {
   rank: number;
   user_id: string;
   username: string;
@@ -37,7 +37,7 @@ export interface LeaderboardEntry {
   best_score: number;
 }
 
-export interface OverallLeaderboardEntry {
+export interface OverallLadderEntry {
   rank: number;
   user_id: string;
   username: string;

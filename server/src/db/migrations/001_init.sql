@@ -65,7 +65,8 @@ INSERT INTO games (slug, title, description, emoji) VALUES
   ('dots-boxes',     'Dots & Boxes',   'Claim boxes by completing their four sides before the CPU.',                          '⏹️'),
   ('pizza-time',   'Pizza Time',   'Serve pizzas to your hungry customers.',   '🍕'),
   ('snake-escape',   'Snake Escape',   'Launch snakes off the grid in the right order — one wrong move and it''s game over.', '🐍'),
-  ('all-in-blackjack',   'All-In Blackjack',   'Go all-in or fold in this high-stakes blackjack game against the dealer.', '🃏');
+  ('all-in-blackjack',   'All-In Blackjack',   'Go all-in or fold in this high-stakes blackjack game against the dealer.', '🃏'),
+  ('city-insect',   'City Insect',   'Navigate the city as a clever insect, avoiding dangers and finding food.', '🪳');
 
 -- ── Seed users (dev / demo accounts) ──────────────────────────────────────────
 
@@ -90,7 +91,7 @@ SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 24 FROM games WHERE slu
 SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 19 FROM games WHERE slug = 'quick-math'     UNION ALL
 SELECT '00000000-0000-0000-0000-000000000003'::uuid, id,  9 FROM games WHERE slug = 'quick-math'     UNION ALL
 SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 50 FROM games WHERE slug = 'color-sort'     UNION ALL
-SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 80 FROM games WHERE slug = 'color-sort'     UNION ALL
+SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 40 FROM games WHERE slug = 'color-sort'     UNION ALL
 SELECT '00000000-0000-0000-0000-000000000003'::uuid, id, 30 FROM games WHERE slug = 'color-sort'     UNION ALL
 SELECT '00000000-0000-0000-0000-000000000001'::uuid, id, 22 FROM games WHERE slug = 'balloon-popper' UNION ALL
 SELECT '00000000-0000-0000-0000-000000000002'::uuid, id, 19 FROM games WHERE slug = 'balloon-popper' UNION ALL

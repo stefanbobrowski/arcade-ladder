@@ -57,6 +57,15 @@
   padding: 1.1rem 1rem 0;
   gap: 0.5rem;
   font-family: 'Georgia', serif;
+  position: relative;
+}
+
+// Volume control: top-right corner of the felt
+.volumeCtrl {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 10;
 }
 
 // ── Table center: logo + bet coins ────────────────────────────────────────────
@@ -119,6 +128,24 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-family: system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+// Chip count shown next to "You" label
+.chipsDisplay {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem 0.1rem 0.35rem;
+  color: #fcd34d;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0;
 }
 
 .divider {
@@ -308,13 +335,46 @@
   }
 }
 
-.coinAmount {
-  font-size: 1rem;
-  font-weight: 900;
+.betCoinIcon {
   color: #78350f;
-  font-family: system-ui, sans-serif;
-  line-height: 1;
+  margin-bottom: 1px;
 }
+
+// When bet is returned/won — shift tint to green
+.betCoinReturn {
+  background: radial-gradient(circle at 36% 30%, #bbf7d0, #22c55e 52%, #14532d);
+  border-color: #166534;
+  box-shadow:
+    0 5px 18px rgba(34, 197, 94, 0.45),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.2),
+    inset 0 2px 5px rgba(255, 255, 255, 0.4);
+
+  .betCoinIcon {
+    color: #14532d;
+  }
+  .coinAmount {
+    color: #14532d;
+  }
+  .coinLabel {
+    color: #166534;
+  }
+}
+
+// Chip count in the ALL-IN button
+.allInChips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-left: 0.4rem;
+}
+//   font-weight: 900;
+//   color: #78350f;
+//   font-family: system-ui, sans-serif;
+//   line-height: 1;
+// }
 
 .coinLabel {
   font-size: 0.5rem;

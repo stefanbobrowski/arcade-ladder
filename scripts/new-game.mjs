@@ -5,6 +5,7 @@
  *
  * Example:
  *   node scripts/new-game.mjs word-scramble "Word Scramble" "🔤"
+ *   node scripts/new-game.mjs city-insect "City Insect" "🪳"
  *
  * What it does:
  *   1. Creates client/src/games/<ComponentName>/index.tsx  (stub component)

@@ -27,15 +27,6 @@ const LEVEL_CONFIG: [number, number][] = [
 
 type Tube = string[];
 
-function shuffleArr<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 function isTubeSolved(tube: Tube): boolean {
   return tube.length === TUBE_SIZE && tube.every((c) => c === tube[0]);
 }
@@ -79,27 +70,53 @@ function applyPour(tubes: Tube[], fromIdx: number, toIdx: number): Tube[] {
 
 function generatePuzzle(numColors: number, emptyTubes: number): Tube[] {
   const colors = COLOR_PALETTE.slice(0, numColors);
-  const pool: string[] = [];
-  for (const c of colors) {
-    for (let i = 0; i < TUBE_SIZE; i++) pool.push(c);
-  }
-  const shuffled = shuffleArr(pool);
-  const tubes: Tube[] = [];
-  for (let i = 0; i < numColors; i++) {
-    tubes.push(shuffled.slice(i * TUBE_SIZE, (i + 1) * TUBE_SIZE));
-  }
-  // Break any accidentally pre-solved tubes
-  for (let i = 0; i < numColors; i++) {
-    if (isTubeSolved(tubes[i])) {
-      const swapWith = (i + 1) % numColors;
-      [tubes[i][TUBE_SIZE - 1], tubes[swapWith][0]] = [
-        tubes[swapWith][0],
-        tubes[i][TUBE_SIZE - 1],
-      ];
+
+  for (;;) {
+    // Build pool of all segments and shuffle them randomly
+    const pool: string[] = colors.flatMap((c) => Array(TUBE_SIZE).fill(c));
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
     }
+    // Distribute into tubes
+    const tubes: Tube[] = Array.from({ length: numColors }, (_, i) =>
+      pool.slice(i * TUBE_SIZE, (i + 1) * TUBE_SIZE)
+    );
+    for (let i = 0; i < emptyTubes; i++) tubes.push([]);
+
+    // Retry on the rare chance the shuffle produced an already-solved layout
+    if (!isPuzzleSolved(tubes)) return tubes;
   }
-  for (let i = 0; i < emptyTubes; i++) tubes.push([]);
-  return tubes;
+}
+
+// ── Web-Audio click feedback ──────────────────────────────────────────────────
+let _audioCtx: AudioContext | null = null;
+function getAudioCtx(): AudioContext {
+  if (!_audioCtx) _audioCtx = new AudioContext();
+  return _audioCtx;
+}
+
+function playClick(ok: boolean) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(ok ? 880 : 220, ctx.currentTime);
+    if (!ok)
+      osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(
+      0.001,
+      ctx.currentTime + (ok ? 0.08 : 0.18)
+    );
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + (ok ? 0.08 : 0.2));
+  } catch {
+    // AudioContext unavailable — silently ignore
+  }
 }
 
 export default function ColorSort({
@@ -166,6 +183,7 @@ export default function ColorSort({
     if (selected === null) {
       if (tubes[idx].length > 0 && !isTubeSolved(tubes[idx])) {
         setSelected(idx);
+        playClick(true);
       }
       return;
     }
@@ -179,6 +197,7 @@ export default function ColorSort({
       const nextTubes = applyPour(tubes, selected, idx);
       setTubes(nextTubes);
       setSelected(null);
+      playClick(true);
 
       if (isPuzzleSolved(nextTubes)) {
         const bonus = Math.ceil(timeLeftRef.current / 3);
@@ -200,6 +219,7 @@ export default function ColorSort({
         });
       }
     } else {
+      playClick(false);
       // Re-select the clicked tube if it has pourable content
       if (tubes[idx].length > 0 && !isTubeSolved(tubes[idx])) {
         setSelected(idx);

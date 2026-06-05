@@ -50,14 +50,16 @@ export default function Games() {
 }
 
 const GAME_GRADIENTS: Record<string, [string, string]> = {
+  'all-in-blackjack': ['#245e2e', '#387051'],
   'balloon-popper': ['#1897be', '#000000'],
-  'dots-boxes': ['#278adb', '#cc2a6b'],
-  'typing-speed': ['#0284c7', '#0e7490'],
-  'reaction-grid': ['#6d28d9', '#4338ca'],
-  'pattern-memory': ['#047857', '#0f766e'],
-  'quick-math': ['#1d4ed8', '#5b21b6'],
-  'solution-color-sort': ['#db114e', '#0ddd4b'],
-  'match-game': ['#7c3aed', '#06b6d4'],
+  'city-insect': ['#2e2626', '#50461d'],
+  'dots-boxes': ['#1a5a8f', '#cacaca'],
+  'typing-speed': ['#8902c7', '#0e9cc7'],
+  'reaction-grid': ['#ca28d9', '#c2c99c'],
+  'pattern-memory': ['#d68100', '#1780e2'],
+  'quick-math': ['#ffffff', '#5b21b6'],
+  'solution-color-sort': ['#1100ff', '#eeff00'],
+  'match-game': ['#ed3a3a', '#098641'],
   'pizza-time': ['#46250f', '#d46906'],
   'snake-escape': ['#d48336', '#0e5228'],
 };
