@@ -21,7 +21,7 @@
     "@fastify/jwt": "^10.1.0",
     "@fastify/passport": "^3.0.2",
     "dotenv": "^17.4.2",
-    "fastify": "^5.8.5",
+    "fastify": "^5.12.1",
     "fastify-plugin": "^5.1.0",
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
